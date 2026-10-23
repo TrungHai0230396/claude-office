@@ -294,6 +294,12 @@ phòng (dùng một "Claude giả", không gọi API thật) — 48 bài.
   là phiên chạy lại từ chỗ cũ.
 - Đường dẫn tệp của app Claude là của macOS; Linux và Windows chưa chạy được.
 
+## Đóng góp
+
+Báo lỗi hay góp ý: mở Issue. Muốn sửa: fork, tạo nhánh, chạy `npm test`, rồi mở Pull Request vào `main`; mỗi PR
+tự chạy bài kiểm và được chủ kho duyệt trước khi gộp. Quy ước (tiếng Việt, không dữ liệu riêng, giữ các lớp khoá)
+ở [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Giấy phép
 
 [MIT](LICENSE). three.js trong `public/vendor/` cũng theo giấy phép MIT (`public/vendor/three-LICENSE.txt`).
