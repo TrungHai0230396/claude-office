@@ -12,8 +12,8 @@ Văn phòng 3D cho các phiên Claude Code trên máy Mac: mỗi phiên là mộ
 > questions and approve plans right there; **view-only** (`npm run cai-chi-xem`) keeps the original behaviour —
 > you answer in the Claude desktop app, and new tasks open there. The UI is in Vietnamese. Unofficial, not
 > affiliated with Anthropic.
-> **Installing with an AI agent?** Follow [Cài từ đầu tới cuối](#cài-từ-đầu-tới-cuối) step by step; the
-> sign-in and macOS permission steps must be done by the user.
+> **Installing with an AI agent?** Follow [Cài từ đầu tới cuối](#cài-từ-đầu-tới-cuối) step by step; in web-control
+> mode the sign-in and macOS permission steps must be done by the user (view-only mode needs neither).
 
 ![Claude Office chạy với dữ liệu mẫu](docs/anh-man-hinh.jpg)
 
@@ -25,8 +25,9 @@ Văn phòng 3D cho các phiên Claude Code trên máy Mac: mỗi phiên là mộ
 
 > **Cho phiên Claude (hay AI) khác:** cài từ đầu tới cuối thì làm đúng thứ tự mục
 > [Cài từ đầu tới cuối](#cài-từ-đầu-tới-cuối) bên dưới, mỗi bước kiểm xong mới sang bước sau. Hỏi người dùng
-> muốn chế độ nào (điều khiển qua web, hay chỉ xem và trả lời trong app Claude desktop như ban đầu) trước bước 4;
-> bước đăng nhập Claude Code (`/login`) và cấp quyền macOS là việc của người dùng — tới đó thì dừng lại nhờ họ làm.
+> muốn chế độ nào (điều khiển qua web, hay chỉ xem và trả lời trong app Claude desktop như ban đầu) trước bước 4.
+> Chế độ chỉ xem xong ở bước 5, **không cần** đăng nhập hay cấp quyền gì thêm. Chế độ điều khiển qua web thì bước
+> đăng nhập Claude Code (`/login`) và cấp quyền macOS là việc của người dùng — tới đó thì dừng lại nhờ họ làm.
 
 | Phiên đang… | Người trong văn phòng |
 |---|---|
@@ -84,7 +85,8 @@ Cho người mới và cho phiên Claude khác làm giúp. Chạy lần lượt 
    phải in ra JSON bắt đầu bằng `{"phien":`. (Chỉ muốn chạy tạm thì `npm start`, hay `VPC_DIEU_KHIEN=0 npm start`
    cho chế độ chỉ xem.)
 5. **Mở** <http://127.0.0.1:5230>. Xem thử với dữ liệu mẫu: <http://127.0.0.1:5230/?demo>.
-   Chế độ chỉ xem thì xong ở đây.
+   **Chế độ chỉ xem thì xong ở đây** — không cần `/login` hay cấp quyền ổ đĩa (văn phòng chỉ đọc tệp trên máy;
+   trả lời và chạy việc trong app Claude desktop, vốn đã đăng nhập sẵn).
 6. **Chế độ điều khiển qua web — đăng nhập Claude Code, người dùng tự làm**: chạy `claude`, gõ `/login`, chọn
    đăng nhập bằng tài khoản Claude có gói (Pro/Max/Team) — hay API key nếu muốn tính tiền theo API. Văn phòng dùng
    đúng đăng nhập này (xem mục [Đăng nhập](#đăng-nhập-dùng-gói-claude-của-bạn)).
