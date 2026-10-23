@@ -760,6 +760,11 @@ export class GiaoDien {
         if (!duocChon && this.bayGio - (p.loi?.luc || p.hoatDongCuoi || 0) > 3600e3) return false;
         lop += ' loi';
         n.uuTien = 2;
+      } else if (p.vanPhong) {
+        // Phiên giao trong văn phòng: nghỉ cũng có nhãn (mờ) để biết người của mình đang ở đâu.
+        lop += ' nghi';
+        n.uuTien = 3;
+        n.gonSan = false;
       } else if (!duocChon) return false;
       chu = rutGon(p.ten || '(chưa có tên)', 24);
     }

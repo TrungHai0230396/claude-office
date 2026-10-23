@@ -404,6 +404,8 @@ button { font: inherit; color: inherit; }
 .nhan.loi { padding: 0; width: 20px; height: 20px; justify-content: center; background: var(--loi); border-color: var(--loi); color: #fff; font-size: 12px; font-weight: 800; }
 .nhan.loi .ten-nho, .nhan.loi .cham-tt { display: none; }
 .nhan.loi::after { content: "!"; }
+.nhan.nghi { opacity: .82; font-weight: 600; color: var(--chu-phu); }
+.nhan.nghi .cham-tt { background: var(--nghi); }
 .nhan.sep { background: var(--chu); color: var(--nen); border-color: var(--chu); }
 .nhan.sep .cham-tt { background: var(--nhan); }
 .nhan.chon { box-shadow: 0 0 0 3px var(--nhan); }
