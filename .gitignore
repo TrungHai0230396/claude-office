@@ -1,0 +1,5 @@
+node_modules/
+.DS_Store
+*.log
+# Cấu hình riêng của Claude Code trên máy (đường dẫn node, máy chủ xem thử).
+.claude/

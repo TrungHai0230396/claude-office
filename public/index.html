@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Văn phòng Claude</title>
+  <meta name="description" content="Mỗi phiên Claude là một người trong văn phòng 3D: đang làm thì gõ máy, xin duyệt thì sang phòng duyệt, xong việc thì đi uống cà phê.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='6' y='14' width='52' height='34' rx='5' fill='%23d97757'/%3E%3Crect x='11' y='19' width='42' height='24' rx='2' fill='%23fff7ef'/%3E%3Crect x='24' y='50' width='16' height='5' rx='2' fill='%23d97757'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/app.css">
+  <script type="importmap">
+    { "imports": { "three": "/vendor/three.module.min.js" } }
+  </script>
+</head>
+<body>
+  <div id="canh" aria-label="Văn phòng 3D"></div>
+  <div id="lop-nhan" aria-hidden="true"></div>
+  <div id="goi-y" class="goi-y an" role="tooltip"></div>
+
+  <header id="thanh-tren">
+    <div class="ten-app">
+      <span class="logo" aria-hidden="true">✻</span>
+      <h1>Văn phòng Claude</h1>
+      <span id="ket-noi" class="ket-noi" title="Trạng thái kết nối">đang nối…</span>
+    </div>
+    <div id="dem" class="dem" role="status" aria-live="polite">
+      <button class="so-lieu so-cho" data-muc="cho" title="Xem những phiên đang chờ bạn">
+        <b class="so">0</b><span>chờ bạn</span>
+      </button>
+      <button class="so-lieu so-lam" data-muc="lam" title="Xem những phiên đang chạy">
+        <b class="so">0</b><span>đang làm</span>
+      </button>
+      <button class="so-lieu so-nghi" data-muc="nghi" title="Xem những phiên đang nghỉ">
+        <b class="so">0</b><span>đang nghỉ</span>
+      </button>
+      <button class="so-lieu so-loi an" data-muc="loi" title="Xem những phiên gặp lỗi">
+        <b class="so">0</b><span>lỗi</span>
+      </button>
+    </div>
+    <div id="dong-ho" class="dong-ho" title="">
+      <b class="gio-may">--:--</b>
+      <span class="muc-dung">
+        <span class="thanh"><i></i></span>
+        <span class="chu">Mức dùng…</span>
+      </span>
+    </div>
+    <div class="nut-phai">
+      <button id="nut-am" class="nut-tron" title="Bật chuông khi có người xin duyệt" aria-pressed="false">🔕</button>
+      <button id="nut-bang" class="nut-tron" title="Ẩn/hiện bảng bên" aria-expanded="true">☰</button>
+    </div>
+  </header>
+
+  <aside id="bang" aria-label="Việc cần bạn">
+    <div id="danh-sach" class="danh-sach"></div>
+  </aside>
+
+  <section id="the" class="the an" aria-live="polite"></section>
+
+  <nav id="goc-nhin" aria-label="Góc nhìn">
+    <button data-goc="toan" class="chon">Toàn cảnh</button>
+    <button data-goc="duyet">Phòng duyệt</button>
+    <button data-goc="lam">Khu làm việc</button>
+    <button data-goc="cafe">Góc cà phê</button>
+    <button data-goc="vuon">Vườn</button>
+  </nav>
+
+  <div id="thong-bao" class="thong-bao" aria-live="polite"></div>
+  <div id="cho-tai" class="cho-tai">Đang dựng văn phòng…</div>
+
+  <script type="module" src="/js/chinh.js"></script>
+</body>
+</html>

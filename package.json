@@ -1,0 +1,29 @@
+{
+  "name": "van-phong-claude",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Văn phòng Claude — mỗi phiên Claude trên máy là một người trong văn phòng 3D: đang làm thì gõ máy, xin duyệt thì sang phòng duyệt, xong việc thì đi uống cà phê",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TrungHai0230396/van-phong-claude.git"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "dashboard",
+    "threejs",
+    "3d",
+    "macos"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test",
+    "cai-tu-chay": "sh scripts/cai-tu-chay.sh",
+    "go-tu-chay": "sh scripts/go-tu-chay.sh"
+  }
+}
