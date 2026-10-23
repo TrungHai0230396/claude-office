@@ -1,12 +1,12 @@
 {
-  "name": "van-phong-claude",
+  "name": "claude-office",
   "version": "0.1.0",
   "private": true,
-  "description": "Văn phòng Claude — mỗi phiên Claude trên máy là một người trong văn phòng 3D: đang làm thì gõ máy, xin duyệt thì sang phòng duyệt, xong việc thì đi uống cà phê",
+  "description": "Claude Office — mỗi phiên Claude trên máy là một người trong văn phòng 3D: đang làm thì gõ máy, xin duyệt thì sang phòng duyệt, xong việc thì đi uống cà phê",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/TrungHai0230396/van-phong-claude.git"
+    "url": "https://github.com/TrungHai0230396/claude-office.git"
   },
   "keywords": [
     "claude",

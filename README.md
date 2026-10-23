@@ -1,15 +1,15 @@
-# Văn phòng Claude
+# Claude Office
 
-Trang 3D xem mọi phiên Claude Code trên máy Mac như một văn phòng: mỗi phiên là một người.
+Văn phòng 3D cho các phiên Claude Code trên máy Mac: mỗi phiên là một người.
 
-> **English.** *Văn phòng Claude* ("Claude office") is a local 3D dashboard for the Claude desktop app's
+> **English.** *Claude Office* is a local 3D dashboard for the Claude desktop app's
 > Code sessions and Claude Code CLI sessions on macOS. Every session is a worker: running sessions type at
 > their project's desk, sessions waiting on you (permission prompt, question, plan approval, "shall I push?")
 > queue in a glass approval room in front of your desk, finished ones get coffee or walk in the garden. A wall
 > clock and a usage board show the 5-hour limit. It runs on `127.0.0.1`, only reads local files and sends
 > nothing anywhere. The UI is in Vietnamese. Unofficial, not affiliated with Anthropic.
 
-![Văn phòng Claude chạy với dữ liệu mẫu](docs/anh-man-hinh.jpg)
+![Claude Office chạy với dữ liệu mẫu](docs/anh-man-hinh.jpg)
 
 > **Lưu ý.** Đây là dự án cá nhân, **không chính thức**, không liên quan tới Anthropic ("Claude" là thương
 > hiệu của Anthropic). Trang đọc các tệp nội bộ chưa công bố của app Claude và Claude Code (định dạng có thể
@@ -46,8 +46,8 @@ Trang chỉ làm nổi việc cần bạn, phần còn lại để chìm cho đ�
 Cần macOS, Node 18 trở lên, và app Claude (thẻ Code) hay Claude Code trên cùng máy.
 
 ```bash
-git clone https://github.com/TrungHai0230396/van-phong-claude.git
-cd van-phong-claude && npm start
+git clone https://github.com/TrungHai0230396/claude-office.git
+cd claude-office && npm start
 ```
 
 Rồi mở <http://127.0.0.1:5230>. Không cần cài gói nào (three.js r152 nằm sẵn trong `public/vendor/`).
@@ -62,9 +62,9 @@ khác localhost.
 npm run cai-tu-chay
 ```
 
-Chép mã sang `~/Library/Application Support/VanPhongClaude/app` (macOS chặn tiến trình nền đọc
-`~/Documents`) và đăng ký LaunchAgent `com.vanphongclaude.maychu`: bật mỗi khi đăng nhập, tự bật lại nếu
-bị tắt. Nhật ký ở `~/Library/Logs/VanPhongClaude/maychu.log`. **Sửa mã xong thì chạy lại lệnh này** để
+Chép mã sang `~/Library/Application Support/ClaudeOffice/app` (macOS chặn tiến trình nền đọc
+`~/Documents`) và đăng ký LaunchAgent `com.claudeoffice.server`: bật mỗi khi đăng nhập, tự bật lại nếu
+bị tắt. Nhật ký ở `~/Library/Logs/ClaudeOffice/server.log`. **Sửa mã xong thì chạy lại lệnh này** để
 bản chạy nền dùng mã mới. Gỡ hẳn: `npm run go-tu-chay`.
 
 ## Đồng hồ và mức dùng

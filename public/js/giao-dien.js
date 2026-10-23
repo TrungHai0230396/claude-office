@@ -247,7 +247,7 @@ export class GiaoDien {
       if (muc === 'cho') nut.classList.toggle('co', dem.cho > 0);
       if (muc === 'loi') nut.classList.toggle('an', dem.loi === 0);
     }
-    document.title = dem.cho ? `(${dem.cho}) Văn phòng Claude` : 'Văn phòng Claude';
+    document.title = dem.cho ? `(${dem.cho}) Claude Office` : 'Claude Office';
     this.veDanhSach();
     this._dungNhan();
     if (this.chon) this.veThe();

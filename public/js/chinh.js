@@ -1,4 +1,4 @@
-// Văn phòng Claude: ghép cảnh 3D, người, giao diện và dữ liệu phiên lấy từ máy chủ trên máy này.
+// Claude Office: ghép cảnh 3D, người, giao diện và dữ liệu phiên lấy từ máy chủ trên máy này.
 import * as THREE from 'three';
 import { OrbitControls } from '/vendor/OrbitControls.js';
 import { dungVanPhong, capNhatVanPhong, veBangMucDung, BIEN, KHU } from './van-phong.js';

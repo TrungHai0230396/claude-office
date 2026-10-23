@@ -1,4 +1,4 @@
-// Văn phòng Claude chạy trên máy (npm start): phục vụ trang 3D trong public/ và trạng thái các phiên
+// Claude Office chạy trên máy (npm start): phục vụ trang 3D trong public/ và trạng thái các phiên
 // Claude của app Claude trên máy này. Chỉ nghe 127.0.0.1, chỉ đọc tệp, không gửi gì ra ngoài.
 import fsp from 'node:fs/promises';
 import http from 'node:http';
@@ -81,5 +81,5 @@ setInterval(() => {
 
 theoDoi.batDau();
 mayChu.listen(CONG, MAY, () => {
-  console.log(`Văn phòng Claude: http://${MAY}:${CONG}`);
+  console.log(`Claude Office: http://${MAY}:${CONG}`);
 });

@@ -1,13 +1,13 @@
 #!/bin/sh
-# Cài (hay cập nhật) Văn phòng Claude chạy nền mỗi khi đăng nhập máy: chép mã sang
-# ~/Library/Application Support/VanPhongClaude (macOS chặn tiến trình nền đọc ~/Documents),
+# Cài (hay cập nhật) Claude Office chạy nền mỗi khi đăng nhập máy: chép mã sang
+# ~/Library/Application Support/ClaudeOffice (macOS chặn tiến trình nền đọc ~/Documents),
 # đăng ký một LaunchAgent tự bật lại nếu bị tắt, rồi khởi động lại nó. Chạy lại lệnh này sau mỗi lần sửa mã.
 set -e
 NGUON="$(cd "$(dirname "$0")/.." && pwd)"
-NHA_APP="$HOME/Library/Application Support/VanPhongClaude"
-MA="com.vanphongclaude.maychu"
+NHA_APP="$HOME/Library/Application Support/ClaudeOffice"
+MA="com.claudeoffice.server"
 PLIST="$HOME/Library/LaunchAgents/$MA.plist"
-NHAT_KY="$HOME/Library/Logs/VanPhongClaude"
+NHAT_KY="$HOME/Library/Logs/ClaudeOffice"
 CONG="${PORT:-5230}"
 
 # Node: ưu tiên bản mới nhất cài qua nvm, không có thì lấy node trong PATH (cần >= 16).
@@ -22,6 +22,12 @@ moi_nhat() {
 NODE_CHAY="${VPC_NODE:-$(moi_nhat)}"
 [ -x "$NODE_CHAY" ] || NODE_CHAY="$(command -v node || true)"
 [ -x "$NODE_CHAY" ] || { echo "Không tìm thấy node." >&2; exit 1; }
+
+# Bản cài cũ khi dự án còn tên "Văn phòng Claude": gỡ đi cho khỏi tranh cổng.
+CU="com.vanphongclaude.maychu"
+launchctl bootout "gui/$(id -u)/$CU" 2>/dev/null || true
+rm -f "$HOME/Library/LaunchAgents/$CU.plist"
+rm -rf "$HOME/Library/Application Support/VanPhongClaude"
 
 mkdir -p "$NHA_APP/app" "$NHAT_KY" "$HOME/Library/LaunchAgents"
 rsync -a --delete --exclude .git --exclude .claude --exclude node_modules --exclude test --exclude scripts "$NGUON/" "$NHA_APP/app/"
@@ -43,8 +49,8 @@ cat > "$PLIST" <<PL
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
   <key>ThrottleInterval</key><integer>10</integer>
-  <key>StandardOutPath</key><string>$NHAT_KY/maychu.log</string>
-  <key>StandardErrorPath</key><string>$NHAT_KY/maychu.log</string>
+  <key>StandardOutPath</key><string>$NHAT_KY/server.log</string>
+  <key>StandardErrorPath</key><string>$NHAT_KY/server.log</string>
 </dict>
 </plist>
 PL
@@ -66,9 +72,9 @@ i=0
 until curl -s -o /dev/null "http://127.0.0.1:$CONG/api/trang-thai"; do
   i=$((i + 1))
   if [ $i -gt 20 ]; then
-    echo "Máy chủ chưa lên, xem $NHAT_KY/maychu.log" >&2
+    echo "Máy chủ chưa lên, xem $NHAT_KY/server.log" >&2
     exit 1
   fi
   sleep 0.5
 done
-echo "Văn phòng Claude đang chạy nền: http://127.0.0.1:$CONG (node: $NODE_CHAY)"
+echo "Claude Office đang chạy nền: http://127.0.0.1:$CONG (node: $NODE_CHAY)"
