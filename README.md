@@ -6,14 +6,27 @@ Văn phòng 3D cho các phiên Claude Code trên máy Mac: mỗi phiên là mộ
 > Code sessions and Claude Code CLI sessions on macOS. Every session is a worker: running sessions type at
 > their project's desk, sessions waiting on you (permission prompt, question, plan approval, "shall I push?")
 > queue in a glass approval room in front of your desk, finished ones get coffee or walk in the garden. A wall
-> clock and a usage board show the 5-hour limit. It runs on `127.0.0.1`, only reads local files and sends
-> nothing anywhere. The UI is in Vietnamese. Unofficial, not affiliated with Anthropic.
+> clock and a usage board show the 5-hour limit. It runs on `127.0.0.1`; for the app's sessions it only reads
+> local files. Two modes: **web control** (default) lets you start sessions from the office itself (Claude
+> Agent SDK, using your own Claude Code sign-in: Pro/Max plan or API key) and chat, allow tools, answer
+> questions and approve plans right there; **view-only** (`npm run cai-chi-xem`) keeps the original behaviour —
+> you answer in the Claude desktop app, and new tasks open there. The UI is in Vietnamese. Unofficial, not
+> affiliated with Anthropic.
+> **Installing with an AI agent?** Follow [Cài từ đầu tới cuối](#cài-từ-đầu-tới-cuối) step by step; the
+> sign-in and macOS permission steps must be done by the user.
 
 ![Claude Office chạy với dữ liệu mẫu](docs/anh-man-hinh.jpg)
 
 > **Lưu ý.** Đây là dự án cá nhân, **không chính thức**, không liên quan tới Anthropic ("Claude" là thương
 > hiệu của Anthropic). Trang đọc các tệp nội bộ chưa công bố của app Claude và Claude Code (định dạng có thể
-> đổi bất cứ lúc nào khi app cập nhật), chỉ đọc chứ không ghi hay gửi đi đâu. Hiện chỉ chạy trên macOS.
+> đổi bất cứ lúc nào khi app cập nhật), chỉ đọc chứ không ghi hay gửi đi đâu. Phần giao việc trong văn phòng
+> (tuỳ chọn) chạy bản Claude Code nguyên gốc qua [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk/overview)
+> của Anthropic, bằng đăng nhập Claude Code của chính bạn. Hiện chỉ chạy trên macOS.
+
+> **Cho phiên Claude (hay AI) khác:** cài từ đầu tới cuối thì làm đúng thứ tự mục
+> [Cài từ đầu tới cuối](#cài-từ-đầu-tới-cuối) bên dưới, mỗi bước kiểm xong mới sang bước sau. Hỏi người dùng
+> muốn chế độ nào (điều khiển qua web, hay chỉ xem và trả lời trong app Claude desktop như ban đầu) trước bước 4;
+> bước đăng nhập Claude Code (`/login`) và cấp quyền macOS là việc của người dùng — tới đó thì dừng lại nhờ họ làm.
 
 | Phiên đang… | Người trong văn phòng |
 |---|---|
@@ -28,8 +41,9 @@ Văn phòng 3D cho các phiên Claude Code trên máy Mac: mỗi phiên là mộ
 Trang chỉ làm nổi việc cần bạn, phần còn lại để chìm cho đỡ rối mắt:
 
 - **Bảng bên**: "Chờ bạn trả lời" là thẻ to (câu hỏi, đã chờ bao lâu, nút **Mở để trả lời** mở đúng
-  phiên trong app Claude qua `claude://claude.ai/epitaxy/<mã phiên>`); "Đang làm" mỗi người một dòng;
-  "Đang nghỉ" và "Gặp lỗi" gập sẵn. Bấm một thẻ hay một dòng thì dưới chân người đó hiện vòng sáng.
+  phiên trong app Claude qua `claude://claude.ai/epitaxy/<mã phiên>`; phiên chạy trong văn phòng thì có
+  luôn nút **Cho phép / Từ chối**); "Đang làm" mỗi người một dòng; "Đang nghỉ" và "Gặp lỗi" gập sẵn.
+  Bấm một thẻ hay một dòng thì dưới chân người đó hiện vòng sáng.
 - **Trong cảnh** chỉ người đứng đầu hàng chờ và người đang làm có nhãn tên; người chờ sau là chấm vàng,
   lỗi mới là chấm đỏ, người nghỉ không có nhãn. Rê chuột vào ai cũng hiện ô gợi ý.
 - **Thông báo** chỉ bật khi có người mới xin duyệt hay vừa gặp lỗi; nút 🔔 bật thêm chuông và thông báo
@@ -41,20 +55,54 @@ Trang chỉ làm nổi việc cần bạn, phần còn lại để chìm cho đ�
   hiện vòng sáng; người đó nằm ngoài màn hình thì cảnh chỉ trượt ngang tới, giữ nguyên độ xa. Gập/mở
   bảng bên chỉ dịch cảnh sang ngang.
 
+## Cài từ đầu tới cuối
+
+Cho người mới và cho phiên Claude khác làm giúp. Chạy lần lượt trong Terminal, mỗi bước kiểm xong mới sang bước sau.
+
+1. **Kiểm máy**: macOS; Node 18 trở lên (`node -v`); git; Claude Code dòng lệnh (`claude --version`, chưa có thì
+   cài theo <https://code.claude.com/docs/en/setup>).
+2. **Lấy mã và cài thư viện** (Claude Agent SDK, khoảng 300 MB):
+
+   ```bash
+   cd ~ && git clone https://github.com/TrungHai0230396/claude-office.git && cd claude-office && npm ci
+   ```
+
+3. **Kiểm mã**: `npm test` — mọi bài phải qua (`pass`, `fail 0`).
+4. **Chọn chế độ rồi cài chạy nền** (tự bật mỗi khi đăng nhập máy):
+   - **Điều khiển qua web** — giao việc, chat, cho phép, duyệt ngay trên trang: `npm run cai-tu-chay`
+   - **Chỉ xem như ban đầu** — trả lời và cho phép trong app Claude desktop, nút Giao việc mở việc mới trong
+     app: `npm run cai-chi-xem`
+
+   Kiểm: `curl -s http://127.0.0.1:5230/api/trang-thai | head -c 120` phải in ra JSON bắt đầu bằng
+   `{"phien":`. (Chỉ muốn chạy tạm thì `npm start`, hay `VPC_DIEU_KHIEN=0 npm start` cho chế độ chỉ xem.)
+5. **Mở** <http://127.0.0.1:5230>. Xem thử với dữ liệu mẫu: <http://127.0.0.1:5230/?demo>.
+   Chế độ chỉ xem thì xong ở đây.
+6. **Chế độ điều khiển qua web — đăng nhập Claude Code, người dùng tự làm**: chạy `claude`, gõ `/login`, chọn
+   đăng nhập bằng tài khoản Claude có gói (Pro/Max/Team) — hay API key nếu muốn tính tiền theo API. Văn phòng dùng
+   đúng đăng nhập này (xem mục [Đăng nhập](#đăng-nhập-dùng-gói-claude-của-bạn)).
+7. **Chế độ điều khiển qua web, dự án nằm trong Documents, Desktop hay Downloads — người dùng tự làm**: cấp
+   "Truy cập toàn bộ ổ đĩa" cho `node` mà bước 4 in ra, rồi chạy lại `npm run cai-tu-chay`; hoặc bỏ chạy nền
+   (`npm run go-tu-chay`) và dùng `npm start` trong Terminal (xem [mục này](#macos-chặn-thư-mục-documents-desktop-downloads)).
+   Kiểm: bấm **＋ Giao việc**, chọn một dự án, giao một việc nhỏ; Claude xin quyền thì bấm **Cho phép**.
+8. **Về sau**: cập nhật `git pull && npm ci && npm run cai-tu-chay` (chế độ chỉ xem thì `npm run cai-chi-xem`);
+   đổi chế độ thì chạy lệnh cài của chế độ kia; gỡ hẳn `npm run go-tu-chay`.
+
 ## Chạy
 
 Cần macOS, Node 18 trở lên, và app Claude (thẻ Code) hay Claude Code trên cùng máy.
 
 ```bash
 git clone https://github.com/TrungHai0230396/claude-office.git
-cd claude-office && npm start
+cd claude-office && npm install && npm start
 ```
 
-Rồi mở <http://127.0.0.1:5230>. Không cần cài gói nào (three.js r152 nằm sẵn trong `public/vendor/`).
-Muốn xem thử với dữ liệu mẫu: <http://127.0.0.1:5230/?demo>. Đổi cổng: `PORT=5300 npm start`.
+Rồi mở <http://127.0.0.1:5230>. three.js r152 nằm sẵn trong `public/vendor/`; `npm install` chỉ để cài
+Claude Agent SDK cho phần giao việc (không cài thì phần xem vẫn chạy). Muốn xem thử với dữ liệu mẫu:
+<http://127.0.0.1:5230/?demo> (thêm `&chon=vp_demo_dang_nhap` để mở sẵn khung chat mẫu). Đổi cổng:
+`PORT=5300 npm start`.
 
-Máy chủ chỉ nghe `127.0.0.1`, chỉ **đọc** tệp, không gửi gì ra ngoài, và từ chối yêu cầu có `Host`
-khác localhost.
+Máy chủ chỉ nghe `127.0.0.1` và từ chối yêu cầu có `Host` khác localhost. Với phiên của app Claude, nó
+chỉ **đọc** tệp, không ghi, không gửi gì ra ngoài.
 
 ### Chạy nền tự động
 
@@ -66,6 +114,85 @@ Chép mã sang `~/Library/Application Support/ClaudeOffice/app` (macOS chặn ti
 `~/Documents`) và đăng ký LaunchAgent `com.claudeoffice.server`: bật mỗi khi đăng nhập, tự bật lại nếu
 bị tắt. Nhật ký ở `~/Library/Logs/ClaudeOffice/server.log`. **Sửa mã xong thì chạy lại lệnh này** để
 bản chạy nền dùng mã mới. Gỡ hẳn: `npm run go-tu-chay`.
+
+## Giao việc ngay trong văn phòng
+
+Nút **＋ Giao việc** trên thanh trên: chọn dự án, ghi việc, rồi chọn **chạy ở đâu**:
+
+- **Trong văn phòng** (chế độ điều khiển qua web): máy chủ chạy một phiên Claude Code mới qua
+  [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk/overview); chọn Claude được tự làm tới đâu
+  (**Hỏi trước** / **Tự sửa tệp** / **Lên kế hoạch trước**). Mọi thứ trả lời ngay trên trang (bên dưới).
+- **Mở trong app Claude** (như ban đầu, có ở cả chế độ chỉ xem): trang mở app Claude desktop bằng link
+  `claude://code/new?q=<việc>&folder=<thư mục>` — giống mục "New Claude Code Session Here" của Finder — để bạn
+  xem lại rồi chạy trong app; phiên hiện trong văn phòng như mọi phiên của app, trả lời bằng nút **Mở để trả lời**.
+
+Người đó vào bàn làm việc như mọi phiên khác. Với phiên chạy trong văn phòng, bấm vào người đó là thẻ chi tiết
+thành **khung chat**:
+
+- nhắn tiếp (Enter gửi, Shift+Enter xuống dòng), **Dừng** giữa chừng, **Đóng phiên**;
+- Claude **xin quyền** (chạy lệnh, sửa tệp…) thì hiện lệnh đầy đủ và ba nút **Cho phép** / **Luôn cho phép
+  trong phiên này** / **Từ chối** — bấm được luôn trên thẻ ở bảng bên;
+- Claude **hỏi bạn** (AskUserQuestion) thì hiện các lựa chọn để bấm, hoặc tự gõ câu trả lời;
+- Claude **trình kế hoạch** thì đọc ngay trong thẻ, **Duyệt** (hỏi trước khi sửa tệp, hay cho tự sửa tệp)
+  hoặc ghi góp ý để Claude sửa lại.
+
+![Khung chat và hộp xin phép của một phiên chạy trong văn phòng (dữ liệu mẫu)](docs/khung-chat.jpg)
+
+Phiên rảnh 30 phút thì tiến trình tự tắt cho nhẹ máy; nhắn tiếp là chạy lại từ chỗ cũ. Danh sách phiên lưu
+ở `~/Library/Application Support/ClaudeOffice/phien-van-phong.json` (không lưu hội thoại; hội thoại nằm
+trong nhật ký của Claude Code như mọi phiên). Phiên của app Claude desktop vẫn chỉ xem và mở trong app.
+
+### Đăng nhập: dùng gói Claude của bạn
+
+Phiên chạy trong văn phòng là bản Claude Code nguyên gốc (SDK chạy đúng tệp `claude` Anthropic phát hành) và
+dùng **đúng đăng nhập Claude Code trên máy** — chung với lệnh `claude` trong Terminal, **không** phải đăng nhập
+của app Claude desktop. Đăng nhập bằng gói Pro/Max thì phiên tính vào hạn mức của gói như mọi phiên Claude
+Code khác; đăng nhập bằng API key thì tính tiền theo API.
+
+- Đăng nhập hay đổi tài khoản: mở Terminal, chạy `claude`, gõ `/login`, chọn tài khoản Claude có gói. Việc đăng
+  nhập luôn đi qua trang của Anthropic; văn phòng **không** đọc, lưu hay chuyển token.
+- Xem phiên đang dùng tài khoản nào: khung chat → **Chi tiết → Đăng nhập**.
+- Gặp lỗi *This organization has been disabled*: Claude Code đang đăng nhập vào một tổ chức (tài khoản Console)
+  đã bị khoá — `/login` lại bằng tài khoản Claude có gói.
+
+Theo trang [Legal and compliance](https://code.claude.com/docs/en/legal-and-compliance) của Claude Code, hạn mức
+Pro/Max tính cho việc dùng cá nhân Claude Code và Agent SDK, và người dùng được đăng nhập bản Claude Code nguyên
+gốc bằng gói của chính mình. Điều bị cấm là ứng dụng bên thứ ba tự làm màn đăng nhập Claude.ai, thu hay giữ
+token, hoặc dùng gói của người này chạy việc cho người khác — nên mỗi người tự cài văn phòng trên máy mình, với
+tài khoản của mình.
+
+### Khoá máy chủ thế nào
+
+Trang văn phòng ra lệnh được cho Claude chạy trên máy bạn, nên máy chủ chỉ nhận lệnh khi đủ cả
+(`lib/bao-ve.js`, có bài kiểm):
+
+- `Host` là `127.0.0.1` / `localhost` (chặn trang lạ dùng DNS rebinding);
+- `Origin` đúng trang văn phòng, thân lệnh là JSON (trang web khác không gửi lệnh tới được);
+- kèm **mã bí mật** tạo ngẫu nhiên mỗi lần máy chủ khởi động, chỉ nằm trong trang văn phòng do máy chủ trả
+  về (không có CORS nên trang khác không đọc được); trang có `X-Frame-Options: DENY` để không bị nhúng vào
+  khung lừa bấm;
+- thư mục giao việc phải có thật, nằm **trong thư mục nhà** (đã giải liên kết mềm);
+- **không bao giờ** chạy chế độ bỏ qua quyền: chỉ `default`, `acceptEdits`, `plan`; nút "Luôn cho phép" chỉ
+  có hiệu lực **trong phiên đó** (không ghi vào tệp cài đặt nào) và lọc bỏ mọi gợi ý đổi sang chế độ bỏ qua
+  quyền; phiên lỡ bị đổi sang chế độ khác thì bị kéo về `default`;
+- mỗi lời xin quyền chỉ được trả lời bằng **cú bấm của bạn**; không có gì tự cho phép.
+
+Lưu ý: `127.0.0.1` mở được từ **mọi tài khoản trên cùng máy Mac**. Máy dùng chung nhiều tài khoản thì dùng chế
+độ chỉ xem: `npm run cai-chi-xem` (chạy tạm: `VPC_DIEU_KHIEN=0 npm start`); khi đó trang không nhận lệnh nào,
+chỉ xem và mở app Claude như ban đầu.
+
+Phiên chạy trong văn phòng nạp cài đặt, CLAUDE.md, hook và MCP của bạn giống hệt khi chạy `claude` trong
+thư mục đó.
+
+### macOS chặn thư mục Documents, Desktop, Downloads
+
+Bản chạy nền (LaunchAgent) không được macOS cho vào `~/Documents`, `~/Desktop`, `~/Downloads` nếu chưa cấp
+quyền, nên giao việc cho dự án ở đó sẽ báo lỗi kèm cách làm. Hai cách:
+
+- Cài đặt hệ thống → Quyền riêng tư & Bảo mật → **Truy cập toàn bộ ổ đĩa** → thêm đúng tệp `node` mà máy chủ
+  dùng (lệnh `npm run cai-tu-chay` in ra đường dẫn), rồi chạy lại `npm run cai-tu-chay`. Lưu ý: mọi chương
+  trình chạy bằng `node` đó đều có quyền này.
+- Hoặc không chạy nền (`npm run go-tu-chay`) mà chạy `npm start` từ Terminal.
 
 ## Đồng hồ và mức dùng
 
@@ -100,18 +227,23 @@ terminal (có tệp trạng thái sống nhưng không có tệp phiên của ap
 
 ## Cấu trúc
 
-- `server.js` — phục vụ `public/`, `GET /api/trang-thai` (ảnh chụp JSON), `GET /api/su-kien` (SSE, đẩy khi có thay đổi)
+- `server.js` — phục vụ `public/`, `GET /api/trang-thai` (ảnh chụp JSON), `GET /api/su-kien` (SSE, đẩy khi có
+  thay đổi), lệnh điều khiển phiên văn phòng `/api/vp/...` (giao việc, gửi tin, trả lời, dừng, đóng)
+- `lib/phien-vp.js` — phiên chạy trong văn phòng qua Claude Agent SDK: hàng đợi tin, xin quyền, hội thoại
+- `lib/bao-ve.js` — khoá lệnh điều khiển (Host, Origin, mã bí mật, thư mục, chế độ quyền)
 - `lib/doc-phien.js` — đọc tệp (có đệm theo mtime/size), đuôi nhật ký, bảng tiến trình
 - `lib/trang-thai.js` — suy trạng thái từng phiên
 - `lib/theo-doi.js` — vòng quét mỗi giây, so ảnh chụp để chỉ đẩy khi đổi
 - `lib/muc-dung.js` — phần trăm giới hạn 5 giờ/tuần và giờ hết, từ tệp app Claude ghi
-- `scripts/cai-tu-chay.sh`, `scripts/go-tu-chay.sh` — cài/gỡ chạy nền (LaunchAgent)
+- `scripts/cai-tu-chay.sh`, `scripts/go-tu-chay.sh` — cài/gỡ chạy nền (LaunchAgent); `npm run cai-chi-xem`
+  cài chế độ chỉ xem (`VPC_DIEU_KHIEN=0`)
 - `public/js/van-phong.js` — dựng văn phòng (khu bàn theo dự án, phòng duyệt, góc cà phê, vườn)
 - `public/js/nguoi.js` — người và trợ lý nhỏ, tư thế và nhịp đi/gõ/thở
 - `public/js/hanh-vi.js` — điều phối ai đi đâu theo trạng thái, hàng chờ, việc lúc nghỉ
 - `public/js/duong-di.js` — lưới đi lại và tìm đường A*
 - `public/js/man-hinh.js` — màn hình máy tính theo từng kiểu việc
 - `public/js/giao-dien.js` — nhãn trên đầu, ô gợi ý, bảng bên, thẻ chi tiết, thông báo, chuông
+- `public/js/dieu-khien.js` — hộp giao việc, khung chat, hộp duyệt (xin quyền, câu hỏi, kế hoạch)
 - `public/js/demo.js` — dữ liệu mẫu cho `?demo`
 
 ## Kiểm
@@ -120,15 +252,21 @@ terminal (có tệp trạng thái sống nhưng không có tệp phiên của ap
 npm test
 ```
 
-Kiểm tìm đường, tóm đuôi nhật ký, luật suy trạng thái và mức dùng (25 bài).
+Kiểm tìm đường, tóm đuôi nhật ký, luật suy trạng thái, mức dùng, khoá máy chủ và phiên văn phòng (dùng một
+"Claude giả", không gọi API thật) — 41 bài.
 
 ## Giới hạn
 
 - Câu hỏi "có cần bạn trả lời không" khi lượt xong dựa vào tóm tắt cuối lượt của app; phiên tắt tóm tắt
   thì đoán theo câu cuối có dấu "?".
-- Trang chỉ xem và mở phiên; trả lời, cho phép hay lưu trữ phiên vẫn làm trong app Claude.
+- Phiên của app Claude desktop: trang chỉ xem và mở phiên; trả lời, cho phép hay lưu trữ phiên vẫn làm trong
+  app. Chỉ phiên giao trong văn phòng mới điều khiển được.
+- Máy chủ khởi động lại thì lời xin quyền đang chờ của phiên văn phòng mất (tiến trình tắt theo); nhắn tiếp
+  là phiên chạy lại từ chỗ cũ.
 - Đường dẫn tệp của app Claude là của macOS; Linux và Windows chưa chạy được.
 
 ## Giấy phép
 
 [MIT](LICENSE). three.js trong `public/vendor/` cũng theo giấy phép MIT (`public/vendor/three-LICENSE.txt`).
+Claude Agent SDK (`@anthropic-ai/claude-agent-sdk`, cài qua npm, không nằm trong kho này) thuộc Anthropic,
+dùng theo [điều khoản thương mại của Anthropic](https://www.anthropic.com/legal/commercial-terms).

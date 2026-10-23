@@ -263,6 +263,114 @@ button { font: inherit; color: inherit; }
 .the dd { margin: 0; overflow-wrap: anywhere; }
 .the dd a { color: var(--nhan-dam); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 
+/* ---------- phiên chạy trong văn phòng: duyệt nhanh, khung chat, giao việc ---------- */
+.nut.tu-choi { color: var(--loi); }
+.nut.tu-choi:hover { border-color: var(--loi); }
+.nut:disabled { opacity: .5; cursor: default; }
+.nut-giao { height: 36px; padding: 0 14px; border-radius: 12px; }
+.the-cho .lenh-cho {
+  display: block; margin: -4px 0 10px; padding: 6px 8px; border-radius: 8px; background: var(--mat-chim);
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere;
+  max-height: 4.4em; overflow: hidden;
+}
+.the-cho .nut-dong { flex-wrap: wrap; }
+
+.the.co-chat {
+  width: min(470px, calc(100vw - 24px)); height: calc(100vh - 160px); max-height: none;
+  display: flex; flex-direction: column; overflow: hidden; padding-bottom: 12px;
+}
+.the.co-chat .the-tren { flex: none; }
+.the .chinh-yeu.gon { padding: 7px 10px; margin: 0 0 8px; font-size: 13px; }
+.the .chinh-yeu.gon b { display: inline; margin-right: 6px; }
+.the .chinh-yeu.gon p { display: inline; }
+.the .hang-gon { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+.the .hang-gon details { flex: 1; margin: 0; border: 0; padding: 4px 0 0; min-width: 0; }
+.the .hang-gon .nut-dong { flex: none; }
+.the-chat { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--vien); padding-top: 10px; }
+.hoi-thoai { flex: 1; min-height: 80px; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 6px; padding: 2px 2px 4px; }
+.tin { font-size: 13.5px; line-height: 1.5; overflow-wrap: anywhere; max-width: 100%; }
+.tin.ban {
+  align-self: flex-end; max-width: 88%; background: color-mix(in srgb, var(--nhan) 14%, var(--mat-dac));
+  border-radius: 14px 14px 4px 14px; padding: 7px 11px; white-space: pre-wrap;
+}
+.tin.claude { align-self: stretch; padding: 2px 2px; }
+.tin.claude p { margin: 0 0 6px; white-space: pre-wrap; }
+.tin.claude p:last-child { margin-bottom: 0; }
+.tin.claude pre, .hop-duyet pre, .ke-hoach pre {
+  margin: 4px 0 8px; padding: 8px 10px; border-radius: 8px; background: var(--mat-chim); overflow-x: auto;
+  font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre;
+}
+.tin code, .ke-hoach code, .hop-duyet code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--mat-chim); border-radius: 4px; padding: 1px 4px; }
+.md-tieu-de { font-weight: 700; margin: 8px 0 4px; }
+.md-dau-dong { position: relative; margin: 2px 0; white-space: pre-wrap; }
+.md-dau-dong::before { content: attr(data-dau); position: absolute; left: 0; color: var(--chu-mo); }
+.tin.cong-cu { font-size: 12px; color: var(--chu-mo); padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tin.tra-loi { font-size: 12px; color: var(--chu-phu); align-self: flex-end; text-align: right; max-width: 92%; }
+.tin.loi { font-size: 12.5px; color: var(--loi); background: var(--loi-nen); border-radius: 10px; padding: 6px 10px; }
+
+.hop-duyet {
+  flex: none; max-height: 62%; overflow-y: auto; border-radius: 12px; padding: 10px 12px;
+  background: var(--cho-nen); border: 1px solid var(--cho-vien);
+}
+.hop-duyet .tieu-de { display: block; font-size: 12px; font-weight: 700; color: var(--cho-dam); margin-bottom: 4px; }
+.hop-duyet .cau { margin: 0 0 6px; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.hop-duyet .mo-ta, .hop-duyet .ly-do { margin: 0 0 6px; font-size: 12.5px; color: var(--chu-phu); }
+.hop-duyet .chi-tiet { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 160px; overflow-y: auto; }
+.hop-duyet .nut-dong { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.hop-duyet .con-lai { display: block; margin-top: 8px; color: var(--chu-mo); font-size: 12px; }
+.cau-hoi { margin: 6px 0 10px; }
+.cau-hoi .chip { display: inline-block; font-size: 11px; font-weight: 700; color: var(--cho-dam); background: var(--mat-dac); border-radius: 999px; padding: 1px 8px; margin-bottom: 4px; }
+.lua-chon { display: flex; flex-direction: column; gap: 5px; margin: 4px 0 6px; }
+.lua {
+  text-align: left; border: 1px solid var(--vien); background: var(--mat-dac); border-radius: 10px; padding: 6px 10px; cursor: pointer;
+  display: flex; flex-direction: column; gap: 1px;
+}
+.lua b { font-size: 13px; }
+.lua span { font-size: 12px; color: var(--chu-phu); }
+.lua:hover { border-color: var(--chu-mo); }
+.lua[aria-pressed="true"] { border-color: var(--nhan); box-shadow: 0 0 0 1px var(--nhan); background: color-mix(in srgb, var(--nhan) 8%, var(--mat-dac)); }
+.cau-hoi .khac, .hop-duyet .gop-y, .o-nhap textarea, .hop-giao input:not([type="radio"]), .hop-giao textarea, .hop-giao select {
+  width: 100%; font: inherit; font-size: 13.5px; color: var(--chu); background: var(--mat-dac);
+  border: 1px solid var(--vien); border-radius: 10px; padding: 7px 10px; outline: none;
+}
+.cau-hoi .khac:focus, .hop-duyet .gop-y:focus, .o-nhap textarea:focus, .hop-giao input:not([type="radio"]):focus, .hop-giao textarea:focus, .hop-giao select:focus {
+  border-color: var(--nhan); box-shadow: 0 0 0 2px color-mix(in srgb, var(--nhan) 25%, transparent);
+}
+.hop-duyet .hang-gop-y { display: flex; gap: 6px; margin-top: 8px; align-items: flex-end; }
+.hop-duyet .gop-y { resize: none; min-height: 34px; }
+.hop-duyet .hang-gop-y .nut { height: 34px; flex: none; }
+.ke-hoach { max-height: 190px; overflow-y: auto; background: var(--mat-dac); border-radius: 10px; padding: 8px 10px; font-size: 13px; }
+.ke-hoach p { margin: 0 0 6px; white-space: pre-wrap; }
+
+.loi-chat { flex: none; font-size: 12.5px; color: var(--loi); background: var(--loi-nen); border-radius: 10px; padding: 7px 10px; white-space: pre-wrap; }
+.o-nhap { flex: none; display: flex; gap: 6px; align-items: flex-end; }
+.o-nhap textarea { resize: none; min-height: 38px; max-height: 140px; line-height: 1.45; }
+.o-nhap .nut { height: 38px; }
+.nut-phu { flex: none; display: flex; gap: 6px; flex-wrap: wrap; }
+.nut-phu .phai { margin-left: auto; color: var(--chu-mo); }
+
+.hop-giao {
+  width: min(520px, calc(100vw - 24px)); border: 1px solid var(--vien); border-radius: 18px; padding: 0;
+  background: var(--mat-dac); color: var(--chu); box-shadow: var(--bong);
+}
+.hop-giao::backdrop { background: rgba(30, 22, 15, .35); backdrop-filter: blur(2px); }
+.hop-giao form { padding: 18px 20px 16px; display: flex; flex-direction: column; gap: 12px; }
+.hop-giao h2 { margin: 0; font-size: 18px; }
+.hop-giao .phu { margin: -6px 0 0; color: var(--chu-phu); font-size: 13px; }
+.hop-giao .truong { display: flex; flex-direction: column; gap: 5px; }
+.hop-giao .truong > span { font-size: 12.5px; font-weight: 700; color: var(--chu-phu); }
+.hop-giao textarea { resize: vertical; min-height: 96px; }
+.hop-giao fieldset { border: 1px solid var(--vien); border-radius: 12px; padding: 8px 12px 10px; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.hop-giao legend { font-size: 12.5px; font-weight: 700; color: var(--chu-phu); padding: 0 4px; }
+.hop-giao fieldset label { display: flex; align-items: baseline; gap: 7px; font-size: 13.5px; cursor: pointer; flex-wrap: wrap; }
+.hop-giao fieldset input { margin: 0; accent-color: var(--nhan); flex: none; transform: translateY(1px); }
+.hop-giao fieldset input:disabled + b { color: var(--chu-mo); }
+.hop-giao fieldset span { color: var(--chu-phu); font-size: 12.5px; }
+.hop-giao .tat-web { margin: 0; font-size: 12.5px; color: var(--cho-dam); }
+.hop-giao .nut-dong { display: flex; justify-content: flex-end; gap: 8px; }
+.hop-giao .loi-hop { margin: 0; font-size: 13px; color: var(--loi); background: var(--loi-nen); border-radius: 10px; padding: 8px 10px; white-space: pre-wrap; }
+.hop-giao .meo { margin: -6px 0 0; text-align: right; font-size: 11.5px; color: var(--chu-mo); }
+
 /* ---------- góc nhìn ---------- */
 #goc-nhin {
   position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 5;
@@ -358,6 +466,8 @@ button { font: inherit; color: inherit; }
   #bang { top: auto; left: 8px; right: 8px; width: auto; height: 50vh; bottom: 62px; }
   #bang.gap { transform: translateY(calc(100% + 80px)); }
   .the { bottom: 62px; left: 8px; width: calc(100vw - 16px); max-height: 56vh; z-index: 8; }
+  .the.co-chat { width: calc(100vw - 16px); height: 72vh; top: auto; }
+  .nut-giao { padding: 0 10px; }
   .thong-bao { top: 112px; }
 }
 

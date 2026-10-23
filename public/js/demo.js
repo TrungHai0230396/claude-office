@@ -26,6 +26,76 @@ const HOI = [
   ['deNghi', 'Mở phiên mới để viết bài kiểm cho giỏ hàng?'],
 ];
 
+// Hai phiên mẫu "chạy trong văn phòng": có khung chat và hộp duyệt (nút bấm chỉ để xem thử).
+function phienVanPhongMau(bayGio) {
+  const tin = (i, loai, chu, truoc) => ({ i, loai, chu, luc: bayGio - truoc * 1000 });
+  return [
+    {
+      id: 'vp_demo_dang_nhap',
+      ten: 'Sửa lỗi nút Đăng nhập trên điện thoại',
+      duAn: 'cua-hang-online',
+      thuMuc: '~/Projects/cua-hang-online',
+      lienKet: '',
+      nguon: 'vanphong',
+      vanPhong: true,
+      demo: true,
+      conChay: true,
+      trangThai: 'cho',
+      taoLuc: bayGio - 9 * 60e3,
+      hoatDongCuoi: bayGio - 40e3,
+      moHinh: 'claude-opus-5-5',
+      cheDo: 'default',
+      luotXong: 0,
+      troLy: 0,
+      phienBan: 7,
+      duyet: { ma: 'demo-1', loai: 'quyen', congCu: 'Bash', tu: bayGio - 40e3, soCho: 1, chu: 'Cho phép chạy: Chạy bài kiểm giao diện (npm test -- login)', chiTiet: 'npm test -- login', moTa: 'Chạy bài kiểm giao diện', coLuon: true },
+      demoHoiThoai: [
+        tin(0, 'ban', 'Nút Đăng nhập trên điện thoại bấm không ăn, sửa giúp mình rồi chạy bài kiểm nhé.', 540),
+        tin(1, 'claude', 'Để mình xem component **LoginButton** và phần xử lý chạm trước.', 530),
+        tin(2, 'congCu', 'Đang đọc LoginButton.tsx', 525),
+        tin(3, 'congCu', 'Đang tìm “onTouchStart”', 520),
+        tin(4, 'claude', 'Tìm ra rồi: lớp phủ `.banner-cookie` trong suốt nằm đè lên nút trên màn hẹp nên chạm không tới nút.\n\nMình sẽ:\n- thêm `pointer-events: none` cho lớp phủ khi đã ẩn\n- thêm bài kiểm chạm cho màn 375px', 400),
+        tin(5, 'congCu', 'Đang sửa banner.css', 380),
+        tin(6, 'traLoi', '✓ Cho phép: sửa banner.css', 370),
+        tin(7, 'claude', 'Đã sửa xong. Giờ mình chạy bài kiểm giao diện cho phần đăng nhập.', 45),
+      ],
+    },
+    {
+      id: 'vp_demo_thanh_toan',
+      ten: 'Lên kế hoạch trang thanh toán mới',
+      duAn: 'cua-hang-online',
+      thuMuc: '~/Projects/cua-hang-online',
+      lienKet: '',
+      nguon: 'vanphong',
+      vanPhong: true,
+      demo: true,
+      conChay: true,
+      trangThai: 'cho',
+      taoLuc: bayGio - 25 * 60e3,
+      hoatDongCuoi: bayGio - 3 * 60e3,
+      moHinh: 'claude-opus-5-5',
+      cheDo: 'plan',
+      luotXong: 0,
+      troLy: 0,
+      phienBan: 4,
+      duyet: { ma: 'demo-2', loai: 'keHoach', congCu: 'ExitPlanMode', tu: bayGio - 3 * 60e3, soCho: 1, chu: 'Xin duyệt kế hoạch' },
+      demoDuyet: {
+        ma: 'demo-2',
+        loai: 'keHoach',
+        soCho: 1,
+        keHoach:
+          '## Trang thanh toán mới\n\n1. Tách `Checkout.tsx` thành 3 bước: địa chỉ, giao hàng, thanh toán\n2. Lưu nháp từng bước vào `localStorage` để tải lại không mất\n3. Thêm kiểm tra số điện thoại Việt Nam\n4. Viết bài kiểm cho cả 3 bước, chạy `npm test`\n\nKhông đụng tới phần cổng thanh toán.',
+      },
+      demoHoiThoai: [
+        tin(0, 'ban', 'Lên kế hoạch làm lại trang thanh toán cho gọn, mình duyệt rồi hẵng làm.', 1500),
+        tin(1, 'congCu', 'Đang đọc Checkout.tsx', 1490),
+        tin(2, 'congCu', 'Đang tìm “paymentGateway”', 1400),
+        tin(3, 'claude', 'Mình đã đọc xong luồng hiện tại. Kế hoạch ở dưới, bạn xem rồi duyệt nhé.', 190),
+      ],
+    },
+  ];
+}
+
 export function taoDemo(khiCo) {
   const bayGio = Date.now();
   let s = 12345;
@@ -70,7 +140,8 @@ export function taoDemo(khiCo) {
   ds.forEach((p) => dat(p, bayGio));
   // Mức dùng mẫu: 61% giới hạn 5 giờ, hết sau 1 giờ 31 phút.
   const mucDung = { namGio: { phanTram: 61, luc: bayGio - 5 * 60e3, cu: false }, het: { luc: bayGio + 91 * 60e3, chinhXac: false, saiSo: 7 * 60e3 }, tuan: { phanTram: 22, luc: bayGio - 5 * 60e3 }, goiY: null };
-  khiCo({ bayGio, phien: ds.map((p) => ({ ...p })), mucDung });
+  const dsVP = phienVanPhongMau(bayGio);
+  khiCo({ bayGio, phien: [...dsVP, ...ds.map((p) => ({ ...p }))], mucDung });
   setInterval(() => {
     const bay = Date.now();
     // Mỗi nhịp đổi trạng thái vài người cho thấy văn phòng sống.
@@ -83,6 +154,6 @@ export function taoDemo(khiCo) {
     }
     // Người đang làm thỉnh thoảng đổi việc.
     for (const p of ds) if (p.trangThai === 'lam' && r() < 0.3) dat(p, bay);
-    khiCo({ bayGio: bay, phien: ds.map((p) => ({ ...p })), mucDung });
+    khiCo({ bayGio: bay, phien: [...dsVP, ...ds.map((p) => ({ ...p }))], mucDung });
   }, 7000);
 }

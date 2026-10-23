@@ -1,8 +1,8 @@
 {
   "name": "claude-office",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Claude Office — mỗi phiên Claude trên máy là một người trong văn phòng 3D: đang làm thì gõ máy, xin duyệt thì sang phòng duyệt, xong việc thì đi uống cà phê",
+  "description": "Claude Office — mỗi phiên Claude trên máy là một người trong văn phòng 3D: đang làm thì gõ máy, xin duyệt thì sang phòng duyệt, xong việc thì đi uống cà phê. Giao việc, chat và duyệt ngay trong văn phòng qua Claude Agent SDK.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -24,6 +24,10 @@
     "start": "node server.js",
     "test": "node --test",
     "cai-tu-chay": "sh scripts/cai-tu-chay.sh",
+    "cai-chi-xem": "VPC_DIEU_KHIEN=0 sh scripts/cai-tu-chay.sh",
     "go-tu-chay": "sh scripts/go-tu-chay.sh"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "0.3.309"
   }
 }

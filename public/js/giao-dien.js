@@ -2,7 +2,9 @@
 //   - bảng bên: "Chờ bạn" là thẻ to có nút mở phiên, "Đang làm" mỗi người một dòng, "Đang nghỉ" và "Lỗi" gập sẵn
 //   - nhãn trên đầu chỉ cho người đang chờ, đang làm, gặp lỗi; người nghỉ rê chuột mới hiện tên
 //   - thông báo chỉ khi có người mới xin duyệt hay vừa gặp lỗi
+//   - phiên do văn phòng chạy: cho phép ngay trên thẻ chờ, chat và trả lời trong thẻ chi tiết (dieu-khien.js)
 import * as THREE from 'three';
+import { coDieuKhien, lenh, KhungChat, HopGiaoViec, TEN_CHE_DO } from './dieu-khien.js';
 
 export const TEN_TRANG_THAI = { lam: 'Đang làm', cho: 'Chờ bạn', loi: 'Gặp lỗi', nghi: 'Đang nghỉ', ngu: 'Ngủ gật' };
 export const LOAI_DUYET = {
@@ -91,6 +93,17 @@ export class GiaoDien {
     this.moChiTiet = false;
     this.v = new THREE.Vector3();
     this._nutAm();
+
+    // Khung chat (phiên văn phòng) chỉ có khi trang do máy chủ trả về kèm mã bí mật (chế độ điều khiển).
+    // Hộp giao việc thì luôn có khi chạy với máy chủ: chế độ chỉ xem vẫn mở được việc mới trong app Claude.
+    this.chat = coDieuKhien() ? new KhungChat({}) : null;
+    this.hopGiao = new HopGiaoViec({
+      khiTao: (id) => this._chonKhiCo(id),
+      khiMoApp: () => this.thongBao('Đã mở app Claude', 'Xem lại việc trong app rồi bấm gửi. Phiên sẽ hiện trong văn phòng khi chạy.', 'cho'),
+    });
+    this.choChon = null;
+    this.nutGiao = document.getElementById('nut-giao');
+    this.nutGiao.addEventListener('click', () => this.hopGiao?.mo());
 
     document.getElementById('nut-am').addEventListener('click', () => {
       this.coAm = !this.coAm;
@@ -224,6 +237,35 @@ export class GiaoDien {
     hop.title = tieuDe.join('\n');
   }
 
+  // bat: máy chủ có bật điều khiển qua web không; undefined là dữ liệu mẫu (ẩn nút Giao việc).
+  datDieuKhien(bat) {
+    this.nutGiao.classList.toggle('an', bat === undefined);
+    this.hopGiao.datVanPhong(bat === true && coDieuKhien());
+  }
+
+  // Phiên vừa tạo chưa có trong ảnh chụp: chờ lần cập nhật tới rồi mới chọn (để máy quay tìm được người).
+  _chonKhiCo(id) {
+    if (this.ban.some((p) => p.id === id)) this.khiChon(id, true);
+    else this.choChon = id;
+  }
+
+  // Máy chủ khởi động lại thì mã bí mật đổi: tải lại trang để lấy mã mới (đang gõ dở thì hỏi trước).
+  mayChuKhoiDongLai() {
+    if (!this.chat || this.daBaoKhoiDong) return;
+    const dangGo = document.querySelector('dialog[open]') || this.chat.coChuDangGo();
+    if (!dangGo) return location.reload();
+    this.daBaoKhoiDong = true;
+    const hop = document.getElementById('thong-bao');
+    const e = el('div', 'tb');
+    e.append(el('b', '', 'Máy chủ vừa khởi động lại'), el('span', '', 'Bấm vào đây để tải lại trang (lệnh cần mã mới). Chữ đang gõ sẽ mất, chép ra trước nếu cần.'));
+    e.addEventListener('click', () => location.reload());
+    hop.prepend(e);
+  }
+
+  baoLoi(chu) {
+    this.thongBao('⚠️ Không làm được', rutGon(chu, 220), 'loi');
+  }
+
   datKetNoi(trangThai, chu) {
     const e = document.getElementById('ket-noi');
     e.className = 'ket-noi ' + trangThai;
@@ -250,7 +292,11 @@ export class GiaoDien {
     document.title = dem.cho ? `(${dem.cho}) Claude Office` : 'Claude Office';
     this.veDanhSach();
     this._dungNhan();
-    if (this.chon) this.veThe();
+    if (this.choChon && dsPhien.some((p) => p.id === this.choChon)) {
+      const id = this.choChon;
+      this.choChon = null;
+      this.khiChon(id, true);
+    } else if (this.chon) this.veThe();
   }
 
   _hien(p) {
@@ -347,9 +393,14 @@ export class GiaoDien {
       moi.append(muc);
     }
 
+    // Không đổi gì thì giữ nguyên: vẽ lại đúng lúc đang bấm nút thì cú bấm bị mất.
+    const tam = document.createElement('div');
+    tam.appendChild(moi);
+    if (tam.innerHTML === this.htmlBang) return;
+    this.htmlBang = tam.innerHTML;
     const cuon = hop.scrollTop;
     hop.textContent = '';
-    hop.appendChild(moi);
+    hop.append(...tam.childNodes);
     hop.scrollTop = cuon;
   }
 
@@ -369,7 +420,44 @@ export class GiaoDien {
     d.append(dong1, el('div', 'loai', `${LOAI_DUYET[p.duyet?.loai] || 'Chờ bạn'} · ${p.duAn}`));
     d.append(el('div', 'hoi', p.duyet?.chu || 'Phiên đang chờ bạn trả lời.'));
     const nut = el('div', 'nut-dong');
-    if (p.lienKet) {
+    if (p.vanPhong && p.duyet?.ma && this.chat) {
+      // Phiên văn phòng: trả lời ngay tại đây. Lời xin quyền thì bấm cho phép / từ chối luôn; câu hỏi
+      // và kế hoạch cần đọc kỹ thì mở thẻ chi tiết.
+      d.dataset.duyet = p.duyet.ma;
+      if (p.duyet.loai === 'quyen') {
+        if (p.duyet.chiTiet && p.duyet.chiTiet !== p.duyet.chu) d.append(el('code', 'lenh-cho', rutGon(p.duyet.chiTiet, 220)));
+        const ds = [];
+        const gui = (tl) => {
+          if (p.demo) return this.thongBao('Bản xem thử', 'Nút này chỉ để xem, không chạy thật.', 'cho', p.id);
+          for (const n of ds) n.disabled = true;
+          lenh.traLoi(p.id, { ma: p.duyet.ma, ...tl }).catch((e) => {
+            for (const n of ds) n.disabled = false;
+            this.baoLoi(e.message);
+          });
+        };
+        const tao = (lop, chu, tl) => {
+          const b = el('button', 'nut nho ' + lop, chu);
+          b.type = 'button';
+          b.addEventListener('click', (e) => {
+            e.stopPropagation();
+            gui(tl);
+          });
+          ds.push(b);
+          return b;
+        };
+        nut.append(tao('chinh', 'Cho phép', { choPhep: true }));
+        if (p.duyet.coLuon) nut.append(tao('', 'Luôn cho phép', { choPhep: true, luon: true }));
+        nut.append(tao('tu-choi', 'Từ chối', { choPhep: false }));
+      } else {
+        const b = el('button', 'nut chinh nho', p.duyet.loai === 'keHoach' ? 'Xem kế hoạch' : 'Trả lời');
+        b.type = 'button';
+        b.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.khiChon(p.id, true);
+        });
+        nut.append(b);
+      }
+    } else if (p.lienKet) {
       const a = el('a', 'nut chinh nho', 'Mở để trả lời');
       a.href = p.lienKet;
       a.addEventListener('click', (e) => e.stopPropagation());
@@ -422,28 +510,54 @@ export class GiaoDien {
   veThe() {
     const the = document.getElementById('the');
     const ma = this.chon;
-    the.textContent = '';
+    // Phần trên dựng mới mỗi lần cập nhật rồi chỉ thay khi khác (thay đúng lúc đang bấm thì mất cú bấm);
+    // khung chat của phiên văn phòng là phần riêng, giữ nguyên để không mất chữ đang gõ.
+    if (!this.theTren) {
+      this.theTren = el('div', 'the-tren');
+      the.prepend(this.theTren);
+    }
+    const tren = el('div');
+    const datTren = () => {
+      if (tren.innerHTML === this.htmlThe) return;
+      this.htmlThe = tren.innerHTML;
+      this.theTren.replaceChildren(...tren.childNodes);
+    };
     const dau = el('div', 'dau');
     const x = el('button', 'dong-x', '✕');
     x.setAttribute('aria-label', 'Đóng');
     x.addEventListener('click', () => this.khiChon(null));
     if (ma === 'sep') {
+      this.chat?.go();
+      the.classList.remove('co-chat');
       dau.append(el('h3', '', 'Bạn (sếp)'), x);
       const so = this.ban.filter((p) => this._hien(p) === 'cho').length;
       const hop = el('div', 'chinh-yeu' + (so ? ' cho' : ''));
-      hop.append(el('b', '', 'Bàn duyệt'), el('p', '', so ? `${so} phiên đang chờ bạn. Bấm "Mở để trả lời" ở bảng bên để mở đúng phiên trong app Claude.` : 'Không ai chờ bạn.'));
-      the.append(dau, hop);
+      hop.append(
+        el('b', '', 'Bàn duyệt'),
+        el('p', '', so ? `${so} phiên đang chờ bạn. Phiên chạy trong văn phòng thì trả lời ngay ở bảng bên; phiên của app Claude thì bấm "Mở để trả lời".` : 'Không ai chờ bạn.'),
+      );
+      tren.append(dau, hop);
+      if (this.hopGiao && !this.nutGiao.classList.contains('an')) {
+        const nd = el('div', 'nut-dong');
+        const b = el('button', 'nut chinh', '＋ Giao việc mới');
+        b.addEventListener('click', () => this.hopGiao.mo());
+        nd.append(b);
+        tren.append(nd);
+      }
+      datTren();
       the.classList.remove('an');
       return;
     }
     const p = this.ban.find((q) => q.id === ma);
     if (!p) {
+      this.chat?.go();
       the.classList.add('an');
       return;
     }
     const h = this._hien(p);
+    const coChat = !!(p.vanPhong && this.chat);
     dau.append(el('h3', '', p.ten || '(chưa có tên)'), x);
-    the.append(dau);
+    tren.append(dau);
 
     const nhanDong = el('div', 'nhan-dong');
     nhanDong.append(el('span', 'huy-hieu hh-' + h, TEN_TRANG_THAI[h]));
@@ -454,14 +568,19 @@ export class GiaoDien {
     nhanDong.append(da);
     if (p.trangThai === 'dung') nhanDong.append(el('span', 'huy-hieu', p.lyDo || 'bị ngắt giữa chừng'));
     if (p.nguon === 'vscode' || p.nguon === 'terminal') nhanDong.append(el('span', 'huy-hieu', p.nguon === 'vscode' ? 'mở từ VS Code' : 'mở từ terminal'));
-    the.append(nhanDong);
+    if (p.vanPhong) nhanDong.append(el('span', 'huy-hieu', 'chạy trong văn phòng' + (p.cheDo ? ' · ' + (TEN_CHE_DO[p.cheDo] || p.cheDo) : '')));
+    tren.append(nhanDong);
 
     const chinh = (lop, tieuDe, noiDung) => {
       const d = el('div', 'chinh-yeu ' + lop);
       d.append(el('b', '', tieuDe), el('p', '', noiDung));
-      the.append(d);
+      tren.append(d);
     };
-    if (h === 'cho') chinh('cho', `${LOAI_DUYET[p.duyet?.loai] || 'Chờ bạn'} · đã ${khoang(this.bayGio - (p.duyet?.tu || this.bayGio))}`, p.duyet?.chu || 'Phiên đang chờ bạn trả lời.');
+    // Phiên văn phòng: lời hỏi và câu trả lời nằm trong khung chat bên dưới, ở đây chỉ một dòng trạng thái.
+    if (coChat) {
+      if (h === 'lam') chinh('lam gon', `Đang làm${p.viec?.tu ? ' · ' + khoang(this.bayGio - p.viec.tu) : ''}`, p.viec?.chu || 'Đang làm');
+      else if (h === 'loi') chinh('loi gon', 'Lỗi', p.loi?.chu || 'Phiên gặp lỗi.');
+    } else if (h === 'cho') chinh('cho', `${LOAI_DUYET[p.duyet?.loai] || 'Chờ bạn'} · đã ${khoang(this.bayGio - (p.duyet?.tu || this.bayGio))}`, p.duyet?.chu || 'Phiên đang chờ bạn trả lời.');
     else if (h === 'lam') chinh('lam', `Đang làm${p.viec?.tu ? ' · ' + khoang(this.bayGio - p.viec.tu) : ''}`, (p.viec?.chu || 'Đang làm') + (p.troLy ? `\n${p.troLy} trợ lý đang chạy cùng` : ''));
     else if (h === 'loi') chinh('loi', 'Lỗi', p.loi?.chu || 'Phiên gặp lỗi.');
     else {
@@ -476,14 +595,14 @@ export class GiaoDien {
       a.href = p.lienKet;
       nut.append(a);
     }
-    const theo = el('button', 'nut' + (this.diTheo ? ' bat' : ''), this.diTheo ? 'Thôi đi theo' : 'Đi theo');
+    const theo = el('button', 'nut' + (coChat ? ' nho' : '') + (this.diTheo ? ' bat' : ''), this.diTheo ? 'Thôi đi theo' : 'Đi theo');
     theo.addEventListener('click', () => {
       this.diTheo = !this.diTheo;
       this.khiDiTheo(this.diTheo);
       this.veThe();
     });
     nut.append(theo);
-    the.append(nut);
+    if (!coChat) tren.append(nut);
 
     // Phần phụ gập lại cho đỡ rối.
     const ct = el('details');
@@ -513,8 +632,13 @@ export class GiaoDien {
       dl.append(dd);
     };
     dong('Thư mục', p.thuMuc);
+    if (p.taiKhoan) {
+      const tk = p.taiKhoan;
+      const loai = tk.goi ? `Gói Claude ${tk.goi}` : tk.ncc && tk.ncc !== 'firstParty' ? tk.ncc : /key/i.test(tk.nguon) ? 'API key (Console)' : 'Tài khoản Claude';
+      dong('Đăng nhập', [loai, tk.toChuc, tk.email].filter(Boolean).join(' · '));
+    }
     dong('Mô hình', [p.moHinh, p.effort].filter(Boolean).join(' · '));
-    dong('Chế độ quyền', p.cheDo);
+    dong('Chế độ quyền', TEN_CHE_DO[p.cheDo] || p.cheDo);
     dong('Bắt đầu', truoc(p.taoLuc, this.bayGio));
     dong('Hoạt động cuối', truoc(p.hoatDongCuoi, this.bayGio));
     if (p.luotXong) dong('Số lượt đã xong', String(p.luotXong));
@@ -536,7 +660,19 @@ export class GiaoDien {
       dong('Phiên con', s);
     }
     ct.append(dl);
-    the.append(ct);
+    if (coChat) {
+      // Gọn cho khung chat: "Đi theo" và "Chi tiết" chung một hàng.
+      const hang = el('div', 'hang-gon');
+      hang.append(ct, nut);
+      tren.append(hang);
+      this.chat.gan(the);
+      this.chat.hien(p);
+    } else {
+      tren.append(ct);
+      this.chat?.go();
+    }
+    datTren();
+    the.classList.toggle('co-chat', coChat);
     the.classList.remove('an');
   }
 

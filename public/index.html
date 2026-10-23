@@ -44,6 +44,7 @@
       </span>
     </div>
     <div class="nut-phai">
+      <button id="nut-giao" class="nut chinh nut-giao an" title="Giao việc cho một phiên Claude mới chạy ngay trong văn phòng">＋ Giao việc</button>
       <button id="nut-am" class="nut-tron" title="Bật chuông khi có người xin duyệt" aria-pressed="false">🔕</button>
       <button id="nut-bang" class="nut-tron" title="Ẩn/hiện bảng bên" aria-expanded="true">☰</button>
     </div>
@@ -62,6 +63,40 @@
     <button data-goc="cafe">Góc cà phê</button>
     <button data-goc="vuon">Vườn</button>
   </nav>
+
+  <dialog id="hop-giao" class="hop-giao" aria-labelledby="hop-giao-tieu-de">
+    <form>
+      <h2 id="hop-giao-tieu-de">Giao việc mới</h2>
+      <p class="phu">Giao cho một phiên Claude Code mới. Người đó vào bàn làm việc; khi cần quyền thì sang phòng duyệt chờ bạn.</p>
+      <label class="truong">
+        <span>Dự án</span>
+        <select name="thuMuc"></select>
+      </label>
+      <input name="thuMucKhac" class="an" placeholder="~/duong/dan/toi/du-an" autocomplete="off" spellcheck="false" aria-label="Đường dẫn thư mục dự án">
+      <label class="truong">
+        <span>Việc cần làm</span>
+        <textarea name="loiNhan" rows="5" placeholder="Ví dụ: sửa lỗi nút Đăng nhập không phản hồi trên điện thoại, rồi chạy bài kiểm."></textarea>
+      </label>
+      <fieldset class="noi-chay">
+        <legend>Chạy ở đâu</legend>
+        <label><input type="radio" name="noiChay" value="vanphong" checked> <b>Trong văn phòng</b> <span>chat, cho phép, duyệt ngay trên trang này (dùng đăng nhập Claude Code của bạn)</span></label>
+        <label><input type="radio" name="noiChay" value="app"> <b>Mở trong app Claude</b> <span>như ban đầu: phiên chạy trong app Claude desktop, trả lời trong app</span></label>
+        <p class="tat-web an">Điều khiển qua web đang tắt (chế độ chỉ xem), nên việc mới mở trong app Claude.</p>
+      </fieldset>
+      <fieldset class="che-do">
+        <legend>Claude được tự làm tới đâu</legend>
+        <label><input type="radio" name="cheDo" value="default" checked> <b>Hỏi trước</b> <span>hỏi bạn trước khi sửa tệp hay chạy lệnh</span></label>
+        <label><input type="radio" name="cheDo" value="acceptEdits"> <b>Tự sửa tệp</b> <span>tự sửa tệp trong dự án, vẫn hỏi trước khi chạy lệnh</span></label>
+        <label><input type="radio" name="cheDo" value="plan"> <b>Lên kế hoạch trước</b> <span>chỉ đọc và lên kế hoạch, bạn duyệt rồi mới làm</span></label>
+      </fieldset>
+      <p class="loi-hop an" role="alert"></p>
+      <div class="nut-dong">
+        <button type="button" class="nut" data-viec="huy">Huỷ</button>
+        <button type="submit" class="nut chinh" data-viec="giao">Giao việc</button>
+      </div>
+      <p class="meo">⌘ + Enter để giao nhanh</p>
+    </form>
+  </dialog>
 
   <div id="thong-bao" class="thong-bao" aria-live="polite"></div>
   <div id="cho-tai" class="cho-tai">Đang dựng văn phòng…</div>

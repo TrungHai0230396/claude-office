@@ -306,21 +306,37 @@ datKhung();
 datGioiHan();
 veGoc('toan', true);
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') giaoDien.chonNguoi(null);
+  // Escape đóng thẻ, trừ khi đang gõ hay đang mở hộp giao việc (hộp tự đóng bằng Escape).
+  if (e.key !== 'Escape' || document.querySelector('dialog[open]')) return;
+  if (/^(TEXTAREA|INPUT|SELECT)$/.test(document.activeElement?.tagName || '')) {
+    document.activeElement.blur();
+    return;
+  }
+  giaoDien.chonNguoi(null);
 });
 
 // ---------- dữ liệu ----------
+const thamSo = new URLSearchParams(location.search);
 let banMoi = null;
 let laDau = true;
+let lanChayDau = null;
 function nhan(du) {
+  if (du.lanChay) {
+    if (!lanChayDau) lanChayDau = du.lanChay;
+    else if (du.lanChay !== lanChayDau) giaoDien.mayChuKhoiDongLai();
+  }
   banMoi = du;
   dieuPhoi.capNhatPhien(du.phien, Date.now());
   giaoDien.capNhat(du.phien, Date.now(), laDau);
   giaoDien.capNhatMucDung(du.mucDung);
+  giaoDien.datDieuKhien(du.dieuKhien);
   veBangMucDung(vp, du.mucDung || null, Date.now());
   if (laDau) {
     laDau = false;
     document.getElementById('cho-tai').classList.add('xong');
+    // ?chon=<mã phiên>: mở sẵn thẻ của người đó (link từ thông báo, ảnh chụp màn hình).
+    const chon = thamSo.get('chon');
+    if (chon && du.phien.some((p) => p.id === chon)) setTimeout(() => giaoDien.khiChon(chon, true), 300);
   }
 }
 // Bảng mức dùng trên tường: giờ và "còn bao lâu" đổi theo phút (hàm tự bỏ qua nếu chưa sang phút mới).
@@ -333,7 +349,6 @@ setInterval(() => {
   }
 }, 30e3);
 
-const thamSo = new URLSearchParams(location.search);
 function chayDemo(ly) {
   giaoDien.datKetNoi('thu', ly);
   taoDemo(nhan);
