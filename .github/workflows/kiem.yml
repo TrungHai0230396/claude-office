@@ -1,0 +1,37 @@
+# Mỗi PR và mỗi lần đẩy lên main: cài đúng theo package-lock rồi chạy bài kiểm, trên macOS (nơi văn phòng
+# chạy), với Node thấp nhất được hỗ trợ (18) và Node mới.
+name: Kiểm
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  kiem:
+    name: npm test (Node ${{ matrix.node }})
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+
+  # Một ô duy nhất để nhánh main đòi phải qua (đủ mọi bản Node).
+  xong:
+    name: Kiểm xong
+    if: always()
+    needs: kiem
+    runs-on: ubuntu-latest
+    steps:
+      - run: test "${{ needs.kiem.result }}" = "success"
