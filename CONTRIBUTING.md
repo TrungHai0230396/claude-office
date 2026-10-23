@@ -31,7 +31,8 @@ duyệt từng PR rồi mới gộp vào `main`.
 - **Giữ nguyên các lớp khoá** (xem mục "Khoá máy chủ thế nào" trong README và `lib/bao-ve.js`):
   - máy chủ chỉ nghe `127.0.0.1`;
   - lệnh điều khiển phải đúng `Host`, đúng `Origin`, kèm mã bí mật, thân lệnh JSON;
-  - không bao giờ dùng chế độ bỏ qua quyền (`bypassPermissions`, `dontAsk`, `auto`);
+  - không bao giờ dùng chế độ bỏ qua quyền (`bypassPermissions`, `dontAsk`); chế độ Tự động (`auto`) thì được,
+    vì Claude Code vẫn hỏi việc rủi ro;
   - mỗi lời xin quyền chỉ được trả lời bằng cú bấm của người dùng;
   - không đưa chữ lấy từ ngoài vào trang bằng `innerHTML`.
 - **Không đụng thông tin đăng nhập**: không đọc, lưu hay chuyển token; phiên chạy bằng đăng nhập Claude Code

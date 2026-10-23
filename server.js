@@ -155,6 +155,7 @@ async function lenhVP(req, res, url) {
       if (phan.length === 5 && phan[4] === 'gui') await quanLy.gui(id, than.loiNhan);
       else if (phan.length === 5 && phan[4] === 'tra-loi') quanLy.traLoi(id, than);
       else if (phan.length === 5 && phan[4] === 'dung') await quanLy.dung(id);
+      else if (phan.length === 5 && phan[4] === 'che-do') await quanLy.doiCheDo(id, than.cheDo);
       else if (phan.length === 5 && phan[4] === 'dong') quanLy.dong(id, than.xoa === true);
       else return guiJson(res, 404, { loi: 'Không có lệnh này' });
       return guiJson(res, 200, { ok: true });

@@ -231,3 +231,24 @@ test('lỗi tài khoản nói rõ cách đăng nhập lại bằng gói Claude',
   assert.equal(giaiThichLoi('unknown', ''), 'Lỗi: unknown');
 });
 
+
+test('duyệt kế hoạch rồi chuyển sang chế độ Tự động; đổi chế độ phiên đang chạy', async () => {
+  const cho = { ten: 'ExitPlanMode', input: { plan: 'x' }, goiY: [] };
+  assert.equal(dungLoiDap(cho, { choPhep: true, cheDoSau: 'auto' }).updatedPermissions[0].mode, 'auto');
+  assert.deepEqual(locGoiY([{ type: 'setMode', mode: 'auto', destination: 'userSettings' }]), [{ type: 'setMode', mode: 'auto', destination: 'session' }]);
+  const goc = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'vpc-pv-')));
+  fs.mkdirSync(path.join(goc, 'du-an'));
+  const ghi = {};
+  const ql = new QuanLyPhienVP({ tepLuu: path.join(goc, 'phien.json'), nha: goc, query: claudeGia(ghi) });
+  try {
+    const id = await ql.tao({ cwd: path.join(goc, 'du-an'), loiNhan: 'xin chào', cheDo: 'acceptEdits' });
+    await ql.doiCheDo(id, 'auto');
+    assert.equal(ghi.datLai, 'auto');
+    assert.equal(ql.ds.get(id).cheDo, 'auto');
+    await assert.rejects(ql.doiCheDo(id, 'bypassPermissions'));
+    assert.equal(ql.ds.get(id).cheDo, 'auto');
+  } finally {
+    ql.tatHet();
+    fs.rmSync(goc, { recursive: true, force: true });
+  }
+});

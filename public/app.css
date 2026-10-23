@@ -348,6 +348,8 @@ button { font: inherit; color: inherit; }
 .o-nhap .nut { height: 38px; }
 .nut-phu { flex: none; display: flex; gap: 6px; flex-wrap: wrap; }
 .nut-phu .phai { margin-left: auto; color: var(--chu-mo); }
+.che-do-chat { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--chu-phu); }
+.che-do-chat select { font: inherit; font-size: 12.5px; color: var(--chu); background: var(--mat-dac); border: 1px solid var(--vien); border-radius: 8px; padding: 4px 6px; }
 
 .hop-giao {
   width: min(520px, calc(100vw - 24px)); border: 1px solid var(--vien); border-radius: 18px; padding: 0;

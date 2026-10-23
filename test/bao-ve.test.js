@@ -51,7 +51,8 @@ test('chế độ quyền: không bao giờ nhận chế độ bỏ qua quyền'
   assert.equal(kiemCheDo(undefined), 'default');
   assert.equal(kiemCheDo('acceptEdits'), 'acceptEdits');
   assert.equal(kiemCheDo('plan'), 'plan');
-  for (const c of ['bypassPermissions', 'dontAsk', 'auto', 'xyz']) assert.throws(() => kiemCheDo(c));
+  assert.equal(kiemCheDo('auto'), 'auto');
+  for (const c of ['bypassPermissions', 'dontAsk', 'xyz']) assert.throws(() => kiemCheDo(c));
 });
 
 test('tin nhắn trống hay quá dài thì từ chối', () => {

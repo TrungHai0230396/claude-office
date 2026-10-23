@@ -304,7 +304,28 @@ window.addEventListener('resize', () => {
 lechHienTai = lechMuc();
 datKhung();
 datGioiHan();
-veGoc('toan', true);
+// Trang tải lại (máy chủ vừa khởi động lại, hay bấm ⌘R) thì giữ nguyên góc nhìn, độ xa, người đang chọn:
+// lưu vào sessionStorage của thẻ trình duyệt này lúc rời trang, đọc lại lúc mở.
+const KHOA_MAY = 'vpc-may';
+function luuMay() {
+  try {
+    const t = controls.target;
+    sessionStorage.setItem(KHOA_MAY, JSON.stringify({ luc: Date.now(), t: [t.x, t.y, t.z], d: khoangHienTai(), goc: gocHienTai, chon: giaoDien.chon, diTheo }));
+  } catch {}
+}
+window.addEventListener('pagehide', luuMay);
+window.addEventListener('beforeunload', luuMay);
+let mayCu = null;
+try {
+  mayCu = JSON.parse(sessionStorage.getItem(KHOA_MAY) || 'null');
+  if (!mayCu || Date.now() - mayCu.luc > 30 * 60e3 || !Array.isArray(mayCu.t) || !(mayCu.d > 0)) mayCu = null;
+} catch {}
+if (mayCu) {
+  datMay(new THREE.Vector3(...mayCu.t), Math.min(controls.maxDistance, Math.max(controls.minDistance, mayCu.d)));
+  controls.update();
+  gocHienTai = KHU_NHIN[mayCu.goc] ? mayCu.goc : null;
+  giaoDien.chonGoc(gocHienTai);
+} else veGoc('toan', true);
 window.addEventListener('keydown', (e) => {
   // Escape đóng thẻ, trừ khi đang gõ hay đang mở hộp giao việc (hộp tự đóng bằng Escape).
   if (e.key !== 'Escape' || document.querySelector('dialog[open]')) return;
@@ -335,9 +356,18 @@ function nhan(du) {
   if (laDau) {
     laDau = false;
     document.getElementById('cho-tai').classList.add('xong');
-    // ?chon=<mã phiên>: mở sẵn thẻ của người đó (link từ thông báo, ảnh chụp màn hình).
+    // ?chon=<mã phiên>: mở sẵn thẻ của người đó (link từ thông báo, ảnh chụp màn hình). Không có thì chọn lại
+    // người đang chọn trước khi trang tải lại, không dời máy quay.
     const chon = thamSo.get('chon');
     if (chon && du.phien.some((p) => p.id === chon)) setTimeout(() => giaoDien.khiChon(chon, true), 300);
+    else if (mayCu?.chon && (mayCu.chon === 'sep' || du.phien.some((p) => p.id === mayCu.chon))) {
+      giaoDien.khiChon(mayCu.chon, false);
+      if (mayCu.diTheo) {
+        diTheo = true;
+        giaoDien.diTheo = true;
+        giaoDien.veThe();
+      }
+    }
   }
 }
 // Bảng mức dùng trên tường: giờ và "còn bao lâu" đổi theo phút (hàm tự bỏ qua nếu chưa sang phút mới).

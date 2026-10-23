@@ -149,7 +149,8 @@ Nút **＋ Giao việc** trên thanh trên: chọn dự án, ghi việc, rồi c
 
 - **Trong văn phòng** (chế độ điều khiển qua web): máy chủ chạy một phiên Claude Code mới qua
   [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk/overview); chọn Claude được tự làm tới đâu
-  (**Hỏi trước** / **Tự sửa tệp** / **Lên kế hoạch trước**). Mọi thứ trả lời ngay trên trang (bên dưới).
+  (**Hỏi trước** / **Tự sửa tệp** / **Tự động** — Claude Code tự duyệt việc an toàn, chỉ hỏi việc rủi ro /
+  **Lên kế hoạch trước**; đổi được giữa chừng ở ô **Chế độ** dưới khung chat). Mọi thứ trả lời ngay trên trang.
 - **Mở trong app Claude** (như ban đầu, có ở cả chế độ chỉ xem): trang mở app Claude desktop bằng link
   `claude://code/new?q=<việc>&folder=<thư mục>` — giống mục "New Claude Code Session Here" của Finder — để bạn
   xem lại rồi chạy trong app; phiên hiện trong văn phòng như mọi phiên của app, trả lời bằng nút **Mở để trả lời**.
@@ -200,7 +201,7 @@ Trang văn phòng ra lệnh được cho Claude chạy trên máy bạn, nên m�
   về (không có CORS nên trang khác không đọc được); trang có `X-Frame-Options: DENY` để không bị nhúng vào
   khung lừa bấm;
 - thư mục giao việc phải có thật, nằm **trong thư mục nhà** (đã giải liên kết mềm);
-- **không bao giờ** chạy chế độ bỏ qua quyền: chỉ `default`, `acceptEdits`, `plan`; nút "Luôn cho phép" chỉ
+- **không bao giờ** chạy chế độ bỏ qua quyền: chỉ `default`, `acceptEdits`, `auto`, `plan`; nút "Luôn cho phép" chỉ
   có hiệu lực **trong phiên đó** (không ghi vào tệp cài đặt nào) và lọc bỏ mọi gợi ý đổi sang chế độ bỏ qua
   quyền; phiên lỡ bị đổi sang chế độ khác thì bị kéo về `default`;
 - mỗi lời xin quyền chỉ được trả lời bằng **cú bấm của bạn**; không có gì tự cho phép.

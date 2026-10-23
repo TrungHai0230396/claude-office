@@ -4,7 +4,7 @@
 const KHOA = document.querySelector('meta[name="vpc-khoa"]')?.content || '';
 export const coDieuKhien = () => !!KHOA;
 
-export const TEN_CHE_DO = { default: 'Hỏi trước', acceptEdits: 'Tự sửa tệp', plan: 'Lên kế hoạch trước' };
+export const TEN_CHE_DO = { default: 'Hỏi trước', acceptEdits: 'Tự sửa tệp', auto: 'Tự động', plan: 'Lên kế hoạch trước' };
 
 function el(the, lop, chu) {
   const e = document.createElement(the);
@@ -49,6 +49,7 @@ export const lenh = {
   gui: (id, loiNhan) => goi(duongPhien(id, 'gui'), { loiNhan }),
   traLoi: (id, tl) => goi(duongPhien(id, 'tra-loi'), tl),
   dung: (id) => goi(duongPhien(id, 'dung'), {}),
+  doiCheDo: (id, cheDo) => goi(duongPhien(id, 'che-do'), { cheDo }),
   dong: (id, xoa = false) => goi(duongPhien(id, 'dong'), { xoa }),
   hoiThoai: (id, tu) => goi(duongPhien(id, 'hoi-thoai') + '?tu=' + tu),
 };
@@ -191,6 +192,11 @@ export class HopGiaoViec {
   async mo() {
     this.baoLoi.textContent = '';
     this.baoLoi.classList.add('an');
+    try {
+      const che = localStorage.getItem('vpc-che-do');
+      const r = che && this.form.querySelector(`input[name="cheDo"][value="${che}"]`);
+      if (r) r.checked = true;
+    } catch {}
     await this._napThuMuc();
     this.hop.showModal();
     this.viec.focus();
@@ -254,6 +260,9 @@ export class HopGiaoViec {
     const thuMuc = this.chon.value === '__khac' ? this.khac.value.trim() : this.chon.value;
     const loiNhan = this.viec.value.trim();
     const cheDo = this.form.elements.cheDo.value || 'default';
+    try {
+      localStorage.setItem('vpc-che-do', cheDo);
+    } catch {}
     if (!thuMuc) return this._loi('Chọn hoặc gõ thư mục dự án.');
     if (!loiNhan) return this._loi('Ghi việc cần làm trước đã.');
     if (this._noiChay() === 'app') {
@@ -367,10 +376,37 @@ export class KhungChat {
   // Chỉ vẽ lại hàng nút khi trạng thái đổi: vẽ lại giữa lúc bấm thì cú bấm bị mất.
   _vePhu(p) {
     const chay = p.conChay && (p.trangThai === 'lam' || p.trangThai === 'cho');
-    const ky = `${p.id}|${chay}|${p.conChay}`;
+    const ky = `${p.id}|${chay}|${p.conChay}|${p.cheDo}`;
     if (ky === this.kyPhu) return;
     this.kyPhu = ky;
     this.phu.textContent = '';
+    // Đổi chế độ quyền ngay trong phiên (vd. đang bị hỏi nhiều thì chuyển sang Tự động).
+    const nhan = el('label', 'che-do-chat');
+    nhan.title = 'Hỏi trước: hỏi mọi việc cần quyền · Tự sửa tệp: chỉ hỏi khi chạy lệnh · Tự động: Claude Code tự duyệt việc an toàn, chỉ hỏi việc rủi ro · Lên kế hoạch: chỉ đọc và trình kế hoạch';
+    const chon = el('select');
+    for (const [gia, ten] of Object.entries(TEN_CHE_DO)) {
+      const o = el('option', '', ten);
+      o.value = gia;
+      chon.append(o);
+    }
+    chon.value = TEN_CHE_DO[p.cheDo] ? p.cheDo : 'default';
+    chon.addEventListener('change', () => {
+      if (p.demo) {
+        chon.value = p.cheDo;
+        return this._baoMau();
+      }
+      const muon = chon.value;
+      chon.disabled = true;
+      lenh
+        .doiCheDo(p.id, muon)
+        .catch((e) => {
+          chon.value = p.cheDo;
+          this._baoLoi(e);
+        })
+        .finally(() => (chon.disabled = false));
+    });
+    nhan.append('Chế độ ', chon);
+    this.phu.append(nhan);
     if (chay) this.phu.append(nutBam('nho', '■ Dừng', (b) => (p.demo ? this._baoMau() : chayLenh([b], () => lenh.dung(p.id), (e) => this._baoLoi(e)))));
     if (p.conChay) this.phu.append(nutBam('nho', 'Đóng phiên', (b) => (p.demo ? this._baoMau() : chayLenh([b], () => lenh.dong(p.id), (e) => this._baoLoi(e)))));
     const xoa = nutBam('nho phai', 'Xoá khỏi văn phòng', (b) => {
@@ -527,10 +563,11 @@ export class KhungChat {
       const nuts = [];
       nuts.push(nutBam('chinh', 'Duyệt, hỏi trước khi sửa tệp', () => gui(nuts, { choPhep: true, cheDoSau: 'default' })));
       nuts.push(nutBam('', 'Duyệt, cho tự sửa tệp', () => gui(nuts, { choPhep: true, cheDoSau: 'acceptEdits' })));
+      nuts.push(nutBam('', 'Duyệt, chế độ Tự động', () => gui(nuts, { choPhep: true, cheDoSau: 'auto' })));
       const nutSua = nutBam('tu-choi', 'Gửi góp ý', () => gui(nuts, { choPhep: false, loiNhan: gopY.value.trim() }));
       nuts.push(nutSua);
       const hang = el('div', 'nut-dong');
-      hang.append(nuts[0], nuts[1]);
+      hang.append(nuts[0], nuts[1], nuts[2]);
       const hangSua = el('div', 'hang-gop-y');
       hangSua.append(gopY, nutSua);
       h.append(hang, hangSua);

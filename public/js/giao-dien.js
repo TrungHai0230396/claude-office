@@ -357,12 +357,17 @@ export class GiaoDien {
   veDanhSach() {
     const hop = document.getElementById('danh-sach');
     const nhom = { cho: [], lam: [], nghi: [], loi: [] };
+    // Phiên giao trong văn phòng (chat được) có mục riêng luôn mở, khỏi lẫn vào "Đang nghỉ" đang gập;
+    // phiên đang chờ bạn thì vẫn nằm ở "Chờ bạn trả lời".
+    const vanPhong = [];
     for (const p of this.ban) {
       const h = this._hien(p);
-      nhom[h === 'ngu' ? 'nghi' : h].push(p);
+      if (p.vanPhong && h !== 'cho') vanPhong.push(p);
+      else nhom[h === 'ngu' ? 'nghi' : h].push(p);
     }
     nhom.cho.sort((a, b) => (b.duyet?.tu || 0) - (a.duyet?.tu || 0));
     for (const k of ['lam', 'nghi', 'loi']) nhom[k].sort((a, b) => (b.hoatDongCuoi || 0) - (a.hoatDongCuoi || 0));
+    vanPhong.sort((a, b) => (b.hoatDongCuoi || 0) - (a.hoatDongCuoi || 0));
 
     const moi = document.createDocumentFragment();
     // Chờ bạn: luôn mở, thẻ to.
@@ -374,6 +379,19 @@ export class GiaoDien {
     if (!nhom.cho.length) mucCho.append(el('div', 'trong-rong', 'Không ai chờ bạn. Cứ để mọi người làm việc nhé.'));
     for (const p of nhom.cho) mucCho.append(this._theCho(p));
     moi.append(mucCho);
+
+    if (vanPhong.length) {
+      const mucVP = el('section', 'muc');
+      mucVP.id = 'muc-van-phong';
+      const dauVP = el('div', 'muc-dau');
+      dauVP.append(el('span', '', 'Phiên trong văn phòng'), el('span', 'dem-nho', String(vanPhong.length)));
+      mucVP.append(dauVP);
+      for (const p of vanPhong) {
+        const h = this._hien(p);
+        mucVP.append(this._dong(p, h === 'ngu' ? 'nghi' : h));
+      }
+      moi.append(mucVP);
+    }
 
     // Đang làm: mỗi người một dòng.
     const mucLam = el('section', 'muc');
