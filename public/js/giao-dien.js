@@ -250,16 +250,24 @@ export class GiaoDien {
   }
 
   // Máy chủ khởi động lại thì mã bí mật đổi: tải lại trang để lấy mã mới (đang gõ dở thì hỏi trước).
+  // Trả về true nếu đang tải lại trang.
   mayChuKhoiDongLai() {
-    if (!this.chat || this.daBaoKhoiDong) return;
+    if (!this.chat) return false;
+    if (this.dangTaiLai) return true;
+    if (this.daBaoKhoiDong) return false;
     const dangGo = document.querySelector('dialog[open]') || this.chat.coChuDangGo();
-    if (!dangGo) return location.reload();
+    if (!dangGo) {
+      this.dangTaiLai = true;
+      location.reload();
+      return true;
+    }
     this.daBaoKhoiDong = true;
     const hop = document.getElementById('thong-bao');
     const e = el('div', 'tb');
     e.append(el('b', '', 'Máy chủ vừa khởi động lại'), el('span', '', 'Bấm vào đây để tải lại trang (lệnh cần mã mới). Chữ đang gõ sẽ mất, chép ra trước nếu cần.'));
     e.addEventListener('click', () => location.reload());
     hop.prepend(e);
+    return false;
   }
 
   baoLoi(chu) {

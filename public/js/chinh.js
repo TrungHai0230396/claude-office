@@ -323,7 +323,8 @@ let lanChayDau = null;
 function nhan(du) {
   if (du.lanChay) {
     if (!lanChayDau) lanChayDau = du.lanChay;
-    else if (du.lanChay !== lanChayDau) giaoDien.mayChuKhoiDongLai();
+    // Máy chủ vừa khởi động lại: đang tải lại trang thì thôi, khỏi gửi lệnh bằng mã cũ.
+    else if (du.lanChay !== lanChayDau && giaoDien.mayChuKhoiDongLai()) return;
   }
   banMoi = du;
   dieuPhoi.capNhatPhien(du.phien, Date.now());

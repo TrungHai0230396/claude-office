@@ -214,6 +214,9 @@ setInterval(() => {
 for (const tin of ['SIGTERM', 'SIGINT']) {
   process.on(tin, () => {
     quanLy?.tatHet();
+    // Đóng gọn kênh cập nhật để trình duyệt nối lại êm (khỏi báo lỗi kết nối bị cắt ngang).
+    for (const { res } of nguoiNghe) res.end();
+    mayChu.close();
     setTimeout(() => process.exit(0), 300).unref();
   });
 }

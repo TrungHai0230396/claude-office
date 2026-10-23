@@ -13,7 +13,7 @@ PLIST="$HOME/Library/LaunchAgents/$MA.plist"
 NHAT_KY="$HOME/Library/Logs/ClaudeOffice"
 CONG="${PORT:-5230}"
 
-# Node: ưu tiên bản mới nhất cài qua nvm, không có thì lấy node trong PATH (cần >= 16).
+# Node: ưu tiên bản mới nhất cài qua nvm, không có thì lấy node trong PATH (cần >= 18).
 # (Không dùng biến NODE: npm tự đặt NODE = node đang chạy npm.) Chọn bản khác: VPC_NODE=/đường/node
 moi_nhat() {
   for d in "$HOME"/.nvm/versions/node/v*/bin/node; do
@@ -25,6 +25,11 @@ moi_nhat() {
 NODE_CHAY="${VPC_NODE:-$(moi_nhat)}"
 [ -x "$NODE_CHAY" ] || NODE_CHAY="$(command -v node || true)"
 [ -x "$NODE_CHAY" ] || { echo "Không tìm thấy node." >&2; exit 1; }
+BAN="$("$NODE_CHAY" -p 'process.versions.node.split(".")[0]')"
+if [ "$BAN" -lt 18 ]; then
+  echo "Cần Node 18 trở lên, đang có $("$NODE_CHAY" -v) ($NODE_CHAY). Cài bản mới (nvm install --lts hay brew install node) rồi chạy lại." >&2
+  exit 1
+fi
 
 # Bản cài cũ khi dự án còn tên "Văn phòng Claude": gỡ đi cho khỏi tranh cổng.
 CU="com.vanphongclaude.maychu"

@@ -59,22 +59,30 @@ Trang chỉ làm nổi việc cần bạn, phần còn lại để chìm cho đ�
 
 Cho người mới và cho phiên Claude khác làm giúp. Chạy lần lượt trong Terminal, mỗi bước kiểm xong mới sang bước sau.
 
-1. **Kiểm máy**: macOS; Node 18 trở lên (`node -v`); git; Claude Code dòng lệnh (`claude --version`, chưa có thì
-   cài theo <https://code.claude.com/docs/en/setup>).
+1. **Kiểm máy**: macOS; git; Claude Code dòng lệnh (`claude --version`, chưa có thì cài theo
+   <https://code.claude.com/docs/en/setup>); **Node 18 trở lên** (`node -v`). Node thấp hơn thì đổi trước khi
+   làm tiếp: có nvm thì `nvm ls` rồi `nvm use <bản 18+ đã cài>` (chưa có thì `nvm install --lts`); không có nvm
+   thì cài Node LTS ở <https://nodejs.org> hoặc `brew install node`.
+   *Phiên Claude làm giúp:* mỗi lệnh shell chạy trong một shell mới nên `nvm use` không giữ lại — ghép nó vào
+   đầu mọi lệnh ở bước 2–4, ví dụ `source ~/.nvm/nvm.sh && nvm use 24 && npm ci`.
 2. **Lấy mã và cài thư viện** (Claude Agent SDK, khoảng 300 MB):
 
    ```bash
    cd ~ && git clone https://github.com/TrungHai0230396/claude-office.git && cd claude-office && npm ci
    ```
 
-3. **Kiểm mã**: `npm test` — mọi bài phải qua (`pass`, `fail 0`).
+   Đã có thư mục `~/claude-office` từ trước thì thay bằng `cd ~/claude-office && git pull && npm ci`.
+3. **Kiểm mã**: `npm test` — mọi bài phải qua (`pass`, `fail 0`). Báo `node: bad option: --test` nghĩa là đang
+   chạy bằng Node cũ (quay lại bước 1).
 4. **Chọn chế độ rồi cài chạy nền** (tự bật mỗi khi đăng nhập máy):
    - **Điều khiển qua web** — giao việc, chat, cho phép, duyệt ngay trên trang: `npm run cai-tu-chay`
    - **Chỉ xem như ban đầu** — trả lời và cho phép trong app Claude desktop, nút Giao việc mở việc mới trong
      app: `npm run cai-chi-xem`
 
-   Kiểm: `curl -s http://127.0.0.1:5230/api/trang-thai | head -c 120` phải in ra JSON bắt đầu bằng
-   `{"phien":`. (Chỉ muốn chạy tạm thì `npm start`, hay `VPC_DIEU_KHIEN=0 npm start` cho chế độ chỉ xem.)
+   Lệnh in ra dòng `Claude Office đang chạy nền: http://127.0.0.1:5230 (node: …)` — bản chạy nền tự chọn Node
+   mới nhất cài qua nvm (không có nvm thì lấy `node` trong PATH), không phụ thuộc Node mặc định. Kiểm: `curl -s http://127.0.0.1:5230/api/trang-thai | head -c 120`
+   phải in ra JSON bắt đầu bằng `{"phien":`. (Chỉ muốn chạy tạm thì `npm start`, hay `VPC_DIEU_KHIEN=0 npm start`
+   cho chế độ chỉ xem.)
 5. **Mở** <http://127.0.0.1:5230>. Xem thử với dữ liệu mẫu: <http://127.0.0.1:5230/?demo>.
    Chế độ chỉ xem thì xong ở đây.
 6. **Chế độ điều khiển qua web — đăng nhập Claude Code, người dùng tự làm**: chạy `claude`, gõ `/login`, chọn
