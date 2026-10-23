@@ -2,6 +2,26 @@
 
 Văn phòng 3D cho các phiên Claude Code trên máy Mac: mỗi phiên là một người.
 
+## Cài nhanh: nhờ Claude cài giúp
+
+Mở Claude Code (thẻ **Code** trong app Claude, hoặc gõ `claude` trong Terminal) rồi dán câu này:
+
+```text
+Cài giúp tôi Claude Office theo mục "Cài từ đầu tới cuối" trong README ở https://github.com/TrungHai0230396/claude-office
+```
+
+- Claude hỏi bạn chọn chế độ: **chỉ xem** (trả lời trong app Claude như thường) hay **điều khiển qua web** (giao
+  việc, chat, cho phép ngay trên trang). Claude xin phép chạy từng lệnh thì cứ cho phép.
+- Chỉ xem: cài xong là dùng. Điều khiển qua web: tới bước đăng nhập (`/login`) và cấp quyền macOS thì Claude dừng
+  lại chỉ bạn làm.
+- Xong thì mở <http://127.0.0.1:5230>. Cần macOS, Claude Code; Node 18+ và git thì Claude giúp cài nếu thiếu.
+
+> **Dành cho Claude (hay AI) đang đọc README này để cài:** làm đúng thứ tự mục
+> [Cài từ đầu tới cuối](#cài-từ-đầu-tới-cuối) bên dưới, mỗi bước kiểm xong mới sang bước sau. Hỏi người dùng
+> muốn chế độ nào (điều khiển qua web, hay chỉ xem và trả lời trong app Claude desktop như ban đầu) trước bước 4.
+> Chế độ chỉ xem xong ở bước 5, **không cần** đăng nhập hay cấp quyền gì thêm. Chế độ điều khiển qua web thì bước
+> đăng nhập Claude Code (`/login`) và cấp quyền macOS là việc của người dùng — tới đó thì dừng lại nhờ họ làm.
+
 > **English.** *Claude Office* is a local 3D dashboard for the Claude desktop app's
 > Code sessions and Claude Code CLI sessions on macOS. Every session is a worker: running sessions type at
 > their project's desk, sessions waiting on you (permission prompt, question, plan approval, "shall I push?")
@@ -22,12 +42,6 @@ Văn phòng 3D cho các phiên Claude Code trên máy Mac: mỗi phiên là mộ
 > đổi bất cứ lúc nào khi app cập nhật), chỉ đọc chứ không ghi hay gửi đi đâu. Phần giao việc trong văn phòng
 > (tuỳ chọn) chạy bản Claude Code nguyên gốc qua [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk/overview)
 > của Anthropic, bằng đăng nhập Claude Code của chính bạn. Hiện chỉ chạy trên macOS.
-
-> **Cho phiên Claude (hay AI) khác:** cài từ đầu tới cuối thì làm đúng thứ tự mục
-> [Cài từ đầu tới cuối](#cài-từ-đầu-tới-cuối) bên dưới, mỗi bước kiểm xong mới sang bước sau. Hỏi người dùng
-> muốn chế độ nào (điều khiển qua web, hay chỉ xem và trả lời trong app Claude desktop như ban đầu) trước bước 4.
-> Chế độ chỉ xem xong ở bước 5, **không cần** đăng nhập hay cấp quyền gì thêm. Chế độ điều khiển qua web thì bước
-> đăng nhập Claude Code (`/login`) và cấp quyền macOS là việc của người dùng — tới đó thì dừng lại nhờ họ làm.
 
 | Phiên đang… | Người trong văn phòng |
 |---|---|
@@ -209,14 +223,18 @@ quyền, nên giao việc cho dự án ở đó sẽ báo lỗi kèm cách làm.
 Tường sau khu làm việc có đồng hồ treo tường (chạy theo giờ máy) và bảng **Mức dùng Claude**; thanh trên
 có bản nhỏ: giờ, phần trăm giới hạn 5 giờ, giờ hết giới hạn (rê chuột để xem giới hạn tuần).
 
-Mức dùng chỉ đọc những gì app Claude tự ghi ra đĩa, không đụng khoá đăng nhập (`lib/muc-dung.js`):
+Số lấy từ đâu (`lib/muc-dung.js`, `lib/lay-muc-dung.js`), không đụng khoá đăng nhập:
 
-- **Phần trăm** (5 giờ, tuần): tệp `~/Library/Application Support/Claude/plan-usage-history.json`, app ghi
-  khoảng 15 phút một lần — nhưng **chỉ khi biểu tượng Claude trên thanh menu được bấm trong 24 giờ qua**
-  (nhật ký app: "background poll paused: tray not opened recently"). Lâu không bấm thì trang báo chưa có số.
-- **Giờ hết giới hạn**: chính xác khi có phiên vừa chạm giới hạn (câu lỗi "resets 6:50pm"); ngoài ra ước
-  tính từ lúc phần trăm tụt hay từ 0 nhích lên (khung 5 giờ mới mở) + 5 giờ, ghi "~" và sai số. Mẫu không
-  có giờ hết, và khung có thể mở từ máy khác (claude.ai, điện thoại), nên không tự đoán theo nhật ký trên máy.
+- **Chế độ điều khiển qua web — chính xác, tự cập nhật**: văn phòng hỏi lệnh **`/usage`** của Claude Code (lệnh
+  chạy tại máy, không gọi mô hình nên không tốn lượt dùng) 5 phút một lần khi có trang đang mở, và ngay sau giờ
+  khung 5 giờ mở lại. Ra đúng % phiên 5 giờ, % tuần và giờ mở lại như Claude Code báo; bảng ghi "Claude Code báo
+  lúc …". Claude Code đăng nhập bằng API key thì không có giới hạn gói để hiện. Phiên giao trong văn phòng còn báo
+  thêm số mới qua sự kiện giới hạn của Agent SDK.
+- **Chế độ chỉ xem** (văn phòng không chạy Claude Code): đọc tệp `~/Library/Application Support/Claude/plan-usage-history.json`
+  app Claude ghi khoảng 15 phút một lần — nhưng **chỉ khi biểu tượng Claude trên thanh menu được bấm trong 24 giờ
+  qua** (nhật ký app: "background poll paused: tray not opened recently"); lâu không bấm thì trang báo chưa có số.
+  Giờ hết giới hạn: chính xác khi có phiên vừa chạm giới hạn (câu lỗi "resets 6:50pm"); ngoài ra ước tính từ lúc
+  phần trăm tụt hay từ 0 nhích lên (khung 5 giờ mới mở) + 5 giờ, ghi "~" và sai số.
 
 ## Lấy trạng thái từ đâu
 
@@ -244,7 +262,8 @@ terminal (có tệp trạng thái sống nhưng không có tệp phiên của ap
 - `lib/doc-phien.js` — đọc tệp (có đệm theo mtime/size), đuôi nhật ký, bảng tiến trình
 - `lib/trang-thai.js` — suy trạng thái từng phiên
 - `lib/theo-doi.js` — vòng quét mỗi giây, so ảnh chụp để chỉ đẩy khi đổi
-- `lib/muc-dung.js` — phần trăm giới hạn 5 giờ/tuần và giờ hết, từ tệp app Claude ghi
+- `lib/muc-dung.js` — phần trăm giới hạn 5 giờ/tuần và giờ hết: đọc kết quả `/usage`, tệp app Claude ghi
+- `lib/lay-muc-dung.js` — hỏi `/usage` của Claude Code mỗi 5 phút khi có trang mở (chế độ điều khiển qua web)
 - `scripts/cai-tu-chay.sh`, `scripts/go-tu-chay.sh` — cài/gỡ chạy nền (LaunchAgent); `npm run cai-chi-xem`
   cài chế độ chỉ xem (`VPC_DIEU_KHIEN=0`)
 - `public/js/van-phong.js` — dựng văn phòng (khu bàn theo dự án, phòng duyệt, góc cà phê, vườn)
@@ -262,8 +281,8 @@ terminal (có tệp trạng thái sống nhưng không có tệp phiên của ap
 npm test
 ```
 
-Kiểm tìm đường, tóm đuôi nhật ký, luật suy trạng thái, mức dùng, khoá máy chủ và phiên văn phòng (dùng một
-"Claude giả", không gọi API thật) — 41 bài.
+Kiểm tìm đường, tóm đuôi nhật ký, luật suy trạng thái, mức dùng (cả đọc `/usage`), khoá máy chủ và phiên văn
+phòng (dùng một "Claude giả", không gọi API thật) — 48 bài.
 
 ## Giới hạn
 

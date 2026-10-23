@@ -882,7 +882,8 @@ function dungCum(vp, bd, manHinh, c, cx, cz, ghe) {
 }
 
 // ---------- bảng mức dùng trên tường ----------
-// md: { namGio: { phanTram, luc, cu }, het: { luc, chinhXac }, tuan: { phanTram } } hoặc null.
+// md: { namGio: { phanTram, luc, cu, nguon }, het: { luc, chinhXac }, tuan: { phanTram, ten, het }, nguonCC } hoặc null.
+// nguon 'claude-code': số lấy từ lệnh /usage của Claude Code; không có thì là số app Claude ghi ra tệp.
 export function veBangMucDung(vp, md, bayGio) {
   const b = vp.dong.bangMD;
   const phut = Math.floor(bayGio / 60e3);
@@ -917,21 +918,26 @@ export function veBangMucDung(vp, md, bayGio) {
     g.textAlign = 'center';
     g.fillText('i', 170, 342);
     g.textAlign = 'left';
+    // Chế độ điều khiển qua web: văn phòng tự hỏi /usage của Claude Code. Chế độ chỉ xem: chờ app Claude ghi số.
+    const [tieuDe, dong, chan] =
+      md?.nguonCC === 'dangLay'
+        ? ['Đang lấy số mức dùng', ['Văn phòng đang hỏi Claude Code', '(lệnh /usage, không tốn lượt dùng).', 'Số hiện ở đây sau vài giây.'], 'Cập nhật 5 phút một lần khi có người mở trang.']
+        : md?.nguonCC === 'khongCo'
+          ? ['Không có giới hạn gói', ['Claude Code trên máy đang dùng API key', '(tính tiền theo API), nên không có', '% giới hạn 5 giờ hay tuần để hiện.'], 'Đăng nhập bằng gói Claude: chạy claude, gõ /login.']
+          : [
+              'Chưa có số mức dùng',
+              ['App Claude chỉ ghi số khi bạn bấm vào', 'biểu tượng Claude trên thanh menu', '(góc trên bên phải màn hình Mac).', 'Bấm một lần, số hiện ở đây sau ít phút.'],
+              'Sau lần bấm đó app tự cập nhật mỗi 15 phút, trong 24 giờ.',
+            ];
     g.fillStyle = '#2b2420';
     g.font = `800 52px ${F}`;
-    g.fillText('Chưa có số mức dùng', 310, 222);
+    g.fillText(tieuDe, 310, 222);
     g.fillStyle = '#4a4038';
     g.font = `600 33px ${F}`;
-    const dong = [
-      'App Claude chỉ ghi số khi bạn bấm vào',
-      'biểu tượng Claude trên thanh menu',
-      '(góc trên bên phải màn hình Mac).',
-      'Bấm một lần, số hiện ở đây sau ít phút.',
-    ];
     dong.forEach((d, i) => g.fillText(d, 310, 290 + i * 50));
     g.fillStyle = '#9a8f84';
     g.font = `600 26px ${F}`;
-    g.fillText('Sau lần bấm đó app tự cập nhật mỗi 15 phút, trong 24 giờ.', 48, 536);
+    g.fillText(chan, 48, 536);
     b.tex.needsUpdate = true;
     return;
   }
@@ -988,10 +994,19 @@ export function veBangMucDung(vp, md, bayGio) {
   if (md?.tuan) {
     g.fillStyle = '#2b2420';
     g.font = `700 36px ${F}`;
-    g.fillText(`Giới hạn tuần: ${Math.round(md.tuan.phanTram)}%`, x, 440);
+    g.fillText(`Giới hạn tuần${md.tuan.ten ? ` (${md.tuan.ten})` : ''}: ${Math.round(md.tuan.phanTram)}%`, x, 440);
+    if (md.tuan.het) {
+      g.fillStyle = '#6f645b';
+      g.font = `600 28px ${F}`;
+      const ngayHet = new Date(md.tuan.het).toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric' });
+      g.fillText(`mở lại ${hhmm(md.tuan.het)} ${ngayHet}`, x, 482);
+    }
   }
   g.font = `600 26px ${F}`;
-  if (co?.cu) {
+  if (co?.nguon === 'claude-code') {
+    g.fillStyle = '#9a8f84';
+    g.fillText(`Claude Code báo lúc ${hhmm(co.luc)} (lệnh /usage) · cập nhật 5 phút một lần`, 48, 536);
+  } else if (co?.cu) {
     g.fillStyle = '#b86e00';
     g.fillText(`Số app ghi lúc ${hhmm(co.luc)} · bấm biểu tượng Claude trên thanh menu để cập nhật`, 48, 536);
   } else if (co) {

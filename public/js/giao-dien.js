@@ -220,10 +220,13 @@ export class GiaoDien {
       const b = el('b', '', pt + '%');
       chu.append('5 giờ ', b);
       if (md.het) chu.append(` · hết ${md.het.chinhXac ? '' : '~'}${hhmm(md.het.luc)}`);
-      tieuDe.push(`Giới hạn 5 giờ: đã dùng ${pt}% (số app ghi lúc ${hhmm(md.namGio.luc)})`);
+      tieuDe.push(`Giới hạn 5 giờ: đã dùng ${pt}% (${md.namGio.nguon === 'claude-code' ? 'Claude Code báo' : 'số app ghi'} lúc ${hhmm(md.namGio.luc)})`);
       if (md.het) tieuDe.push(md.het.chinhXac ? `Hết giới hạn lúc ${hhmm(md.het.luc)}` : `Hết giới hạn khoảng ${hhmm(md.het.luc)} (ước tính, lệch chừng ${Math.max(1, Math.round((md.het.saiSo || 0) / 60e3))} phút)`);
       else tieuDe.push('Giờ hết sẽ hiện khi khung 5 giờ đổi lần tới (app cần ghi vài mẫu quanh lúc đó).');
-      if (md.tuan) tieuDe.push(`Giới hạn tuần: ${Math.round(md.tuan.phanTram)}%`);
+      if (md.tuan) {
+        const ngayHet = md.tuan.het ? new Date(md.tuan.het).toLocaleString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+        tieuDe.push(`Giới hạn tuần${md.tuan.ten ? ` (${md.tuan.ten})` : ''}: ${Math.round(md.tuan.phanTram)}%${ngayHet ? ' · mở lại ' + ngayHet : ''}`);
+      }
       if (md.namGio.cu) {
         chu.append(` (lúc ${hhmm(md.namGio.luc)})`);
         hop.classList.add('chua');
@@ -231,7 +234,7 @@ export class GiaoDien {
     } else {
       thanh.style.width = '0';
       hop.classList.add('chua');
-      chu.textContent = 'Mức dùng: chưa có số';
+      chu.textContent = md?.nguonCC === 'dangLay' ? 'Mức dùng: đang lấy…' : 'Mức dùng: chưa có số';
     }
     if (md?.goiY) tieuDe.push(md.goiY);
     hop.title = tieuDe.join('\n');

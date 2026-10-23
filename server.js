@@ -9,6 +9,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { TheoDoiPhien } from './lib/theo-doi.js';
 import { QuanLyPhienVP } from './lib/phien-vp.js';
+import { LayMucDung } from './lib/lay-muc-dung.js';
 import { taoKhoa, kiemLenh, hostHopLe, LoiNguoiDung } from './lib/bao-ve.js';
 
 const GOC = path.dirname(fileURLToPath(import.meta.url));
@@ -43,8 +44,11 @@ const KHOA = taoKhoa();
 const LAN_CHAY = taoKhoa().slice(0, 12);
 let theoDoi = null;
 const quanLy = DIEU_KHIEN ? new QuanLyPhienVP({ khiDoi: () => theoDoi?.phat() }) : null;
-theoDoi = new TheoDoiPhien({ phienVP: quanLy });
 const nguoiNghe = new Set();
+// Mức dùng gói lấy thẳng từ Claude Code (/usage), chỉ khi có trang đang mở. Chế độ chỉ xem thì không chạy
+// Claude Code, chỉ đọc tệp app Claude ghi.
+const layMucDung = DIEU_KHIEN ? new LayMucDung({ coNguoiXem: () => nguoiNghe.size > 0, khiDoi: () => theoDoi?.phat() }) : null;
+theoDoi = new TheoDoiPhien({ phienVP: quanLy, layMucDung });
 
 function guiJson(res, ma, du) {
   res.writeHead(ma, { ...DAU_AN_TOAN, 'Content-Type': KIEU['.json'], 'Cache-Control': 'no-store' });
@@ -183,6 +187,7 @@ const mayChu = http.createServer(async (req, res) => {
     const nghe = { res };
     nguoiNghe.add(nghe);
     req.on('close', () => nguoiNghe.delete(nghe));
+    layMucDung?.nhacLay();
     res.write(`event: trang-thai\ndata: ${JSON.stringify({ ...(await theoDoi.anh()), lanChay: LAN_CHAY })}\n\n`);
     return;
   }
@@ -234,6 +239,7 @@ mayChu.on('error', (e) => {
 
 await quanLy?.napLai();
 theoDoi.batDau();
+layMucDung?.batDau();
 mayChu.listen(CONG, MAY, () => {
   console.log(`Claude Office: http://${MAY}:${CONG}`);
 });

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { gioHetTuLoi, uocLucMoKhung, tinhMucDung } from '../lib/muc-dung.js';
+import { gioHetTuLoi, uocLucMoKhung, tinhMucDung, docUsage, gopMucDungCC } from '../lib/muc-dung.js';
 
 const L = (s) => Date.parse(s);
 const PHUT = 60e3;
@@ -65,4 +65,52 @@ test('chạm giới hạn: giờ hết chính xác từ câu lỗi, bỏ qua l�
   assert.equal(kq.het.chinhXac, true);
   assert.equal(kq.het.luc, L('2026-10-23T04:40:00Z'));
   assert.equal(kq.namGio.phanTram, 100);
+});
+
+// ---------- số từ lệnh /usage của Claude Code ----------
+const USAGE_THAT = `You are currently using your subscription to power your Claude Code usage
+
+Current session: 42% used · resets Oct 23 at 4:39pm (Asia/Saigon)
+Current week (Fable): 0% used · resets Oct 25 at 9am (Asia/Saigon)
+
+What's contributing to your limits usage?
+Approximate · sessions on this machine only · shares overlap
+
+Last 24h · 3614 requests · 12 sessions
+  97%  Start fresh when you switch tasks · run /clear`;
+
+test('đọc giờ mở lại kiểu "Oct 23 at 4:39pm"', () => {
+  const luc = Date.parse('2026-10-23T11:20:00+07:00');
+  assert.equal(gioHetTuLoi('resets Oct 23 at 4:39pm (Asia/Saigon)', luc), Date.parse('2026-10-23T16:39:00+07:00'));
+  assert.equal(gioHetTuLoi('resets Oct 25 at 9am (Asia/Saigon)', luc), Date.parse('2026-10-25T09:00:00+07:00'));
+});
+
+test('đọc kết quả /usage: phiên 5 giờ, tuần, giờ mở lại', () => {
+  const luc = Date.parse('2026-10-23T11:20:00+07:00');
+  const kq = docUsage(USAGE_THAT, luc);
+  assert.equal(kq.goi, true);
+  assert.deepEqual(kq.namGio, { ten: '', phanTram: 42, het: Date.parse('2026-10-23T16:39:00+07:00') });
+  assert.deepEqual(kq.tuan, [{ ten: 'Fable', phanTram: 0, het: Date.parse('2026-10-25T09:00:00+07:00') }]);
+  assert.equal(docUsage('You are using API usage billing. No plan limits apply.', luc), null);
+  assert.equal(docUsage('', luc), null);
+});
+
+test('gộp số /usage vào mức dùng: mới thì dùng, cũ hay quá giờ mở lại thì bỏ', () => {
+  const bay = Date.parse('2026-10-23T11:25:00+07:00');
+  const cc = { luc: bay - 60e3, ketQua: docUsage(USAGE_THAT, bay - 60e3) };
+  const md = gopMucDungCC({ namGio: null, tuan: null, het: null, goiY: 'bấm biểu tượng' }, cc, bay);
+  assert.equal(md.namGio.phanTram, 42);
+  assert.equal(md.namGio.nguon, 'claude-code');
+  assert.deepEqual(md.het, { luc: Date.parse('2026-10-23T16:39:00+07:00'), chinhXac: true });
+  assert.equal(md.tuan.ten, 'Fable');
+  assert.equal(md.goiY, null);
+  // Cũ quá 20 phút: giữ nguyên.
+  const cu = { namGio: null, tuan: null, het: null, goiY: 'x' };
+  assert.equal(gopMucDungCC(cu, { ...cc, luc: bay - 21 * 60e3 }, bay), cu);
+  // Đã qua giờ mở lại khung 5 giờ: bỏ số 5 giờ cũ.
+  const sau = Date.parse('2026-10-23T16:45:00+07:00');
+  const md2 = gopMucDungCC({ namGio: null, tuan: null, het: null, goiY: 'x' }, { luc: sau - 60e3, ketQua: cc.ketQua }, sau);
+  assert.equal(md2.namGio, null);
+  assert.equal(md2.tuan.phanTram, 0);
+  assert.equal(gopMucDungCC(null, null, bay), null);
 });
