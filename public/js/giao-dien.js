@@ -22,6 +22,7 @@ const VIEC_NGHI = {
   vong: 'Đang dạo vườn',
   gheDa: 'Ngồi ghế đá trong vườn',
   cayNuoc: 'Đứng ở cây nước',
+  ban: 'Ngồi nghỉ ở bàn',
 };
 
 export function rutGon(chu, toiDa) {

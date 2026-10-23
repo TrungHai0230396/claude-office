@@ -4,12 +4,16 @@
 //   xong việc → vươn vai, đi pha cà phê, rồi đứng bàn cao, ngồi sofa, dạo vườn, ngồi ghế đá…
 //   lỗi       → ngồi ôm đầu trước màn hình đỏ
 //   lâu không dùng → gục bàn ngủ
+// Lời nhờ cuối là câu sai đi chơi ("đi ngồi công viên"…) thì lúc nghỉ tới đúng chỗ đó (lenh-nghi.js).
 import * as THREE from 'three';
 import { Nguoi, TroLy, ngoaiHinhTheoMa, bam } from './nguoi.js';
 import { xepBan, dongDauDuyet, datHoiCaPhe, KHU } from './van-phong.js';
+import { lenhNghi } from './lenh-nghi.js';
 
 export const NGU_SAU = 8 * 3600e3;
 const CHO_LAU = 60 * 60e3;
+// Được sai tới đâu thì ở đó (giây, theo đồng hồ cảnh).
+const O_YEN = 3600;
 const LOI_VAO = { x: 4.8, z: 11.0 };
 const BANG_MAU = ['#d08a6c', '#6e9cc8', '#7eae8c', '#a48bc4', '#d2ae5a', '#cc8b9c', '#6eb0b0', '#98a2ad', '#c09068', '#8193c9'];
 
@@ -136,8 +140,10 @@ export class DieuPhoi {
         this.ds.set(p.id, nv);
       }
       const truoc = nv.hien;
+      const lenhTruoc = nv.lenh;
       nv.phien = p;
       nv.hien = trangThaiHien(p, bayGio);
+      nv.lenh = lenhNghi(p.yeuCau);
       const ghe = this.ghe.get(p.id);
       nv.ghe = ghe;
       if (moi && this.lanDau) {
@@ -145,6 +151,11 @@ export class DieuPhoi {
         nv.daoNgay = true;
       }
       if (nv.hien !== truoc || (doiBan && this._dichLaGhe(nv))) this._doiTrangThai(nv, truoc);
+      else if (nv.hien === 'nghi' && nv.lenh !== lenhTruoc) {
+        // Đang nghỉ mà nhận lời sai mới: đi luôn.
+        nv.viec = null;
+        this._viecNghiTiep(nv, true);
+      }
     }
     this._xepHangCho(bayGio);
     if (this.lanDau) {
@@ -193,7 +204,8 @@ export class DieuPhoi {
         // Xong việc: vươn vai ở bàn rồi đi pha cà phê.
         nv.nguoi.datTuThe('vuonVai');
         nv.treo = this.t + 2.6;
-        nv.viec = { loai: 'mayPha', het: 0 };
+        // Có lời sai thì vươn vai xong đi thẳng chỗ được sai.
+        nv.viec = nv.lenh ? null : { loai: 'mayPha', het: 0 };
       } else {
         nv.viec = null;
       }
@@ -205,8 +217,7 @@ export class DieuPhoi {
     const g = nv.ghe;
     if (!g) return;
     nv.nguoi.camDo('');
-    const tuThe = nv.hien === 'loi' ? 'ngoiOmDau' : nv.hien === 'ngu' ? 'nguGuc' : TU_THE_THEO_VIEC[nv.phien.viec?.loai] || 'ngoiGo';
-    this._datDich(nv, { loai: 'ghe', x: g.x, z: g.z, yaw: g.yaw, tuThe, cu: '', ngoi: true }, tocDo);
+    this._datDich(nv, { loai: 'ghe', x: g.x, z: g.z, yaw: g.yaw, tuThe: tuTheGhe(nv), cu: '', ngoi: true }, tocDo);
   }
 
   // ---------- hàng chờ duyệt ----------
@@ -264,7 +275,17 @@ export class DieuPhoi {
     const r = nv.ngau;
     this._traCho(nv);
     let loai = nv.viec?.loai;
-    if (!batDau || !loai) {
+    if (nv.lenh && (!batDau || !loai)) {
+      // Được sai thì tới đúng chỗ đó; sai lấy cà phê thì pha xong ra bàn cao đứng uống.
+      const coCoc = nv.nguoi.doCam === 'coc';
+      loai = nv.lenh === 'mayPha' && (nv.viec?.loai === 'mayPha' || coCoc) ? 'banCao' : nv.lenh;
+      if (loai === 'ban') {
+        nv.viec = { loai, het: this.t + O_YEN + (nv.treo > this.t ? nv.treo - this.t : 0) };
+        nv.luotViec++;
+        this._denGhe(nv, 1.2);
+        return;
+      }
+    } else if (!batDau || !loai) {
       const truoc = nv.viec?.loai;
       const coCoc = nv.nguoi.doCam === 'coc';
       // Ưu tiên ngồi yên (sofa, ghế đá) cho cảnh đỡ rối mắt; đi dạo ít thôi.
@@ -288,7 +309,8 @@ export class DieuPhoi {
       }
     }
     const thoiGian = { mayPha: 12, banCao: 110, sofa: 180, vong: 70, gheDa: 150, cayNuoc: 60 }[loai];
-    nv.viec = { loai, het: this.t + (thoiGian * (0.7 + r() * 0.6)) + (nv.treo > this.t ? nv.treo - this.t : 0) };
+    const lau = nv.lenh && loai !== 'mayPha' ? O_YEN : thoiGian * (0.7 + r() * 0.6);
+    nv.viec = { loai, het: this.t + lau + (nv.treo > this.t ? nv.treo - this.t : 0) };
     nv.luotViec++;
     if (loai === 'vong') {
       // Tới điểm gần nhất trên lối dạo rồi đi vòng.
@@ -395,10 +417,7 @@ export class DieuPhoi {
     } else if (nv.den && nv.dich) {
       nv.yaw = xoayVe(nv.yaw, nv.dich.yaw, dt * 5);
       // Đang ngồi làm việc: tư thế theo việc đang làm.
-      if (nv.dich.loai === 'ghe') {
-        const tuThe = nv.hien === 'loi' ? 'ngoiOmDau' : nv.hien === 'ngu' ? 'nguGuc' : TU_THE_THEO_VIEC[nv.phien.viec?.loai] || 'ngoiGo';
-        ng.datTuThe(tuThe);
-      }
+      if (nv.dich.loai === 'ghe') ng.datTuThe(tuTheGhe(nv));
     }
 
     const dangLam = nv.hien === 'lam' && nv.den && nv.dich?.loai === 'ghe';
@@ -486,6 +505,14 @@ export class DieuPhoi {
     for (const nv of this.ds.values()) ds.push(nv.nguoi.trung);
     return ds;
   }
+}
+
+// Tư thế ngồi ở bàn mình: nghỉ thì ngả lưng, còn lại theo việc đang làm.
+function tuTheGhe(nv) {
+  if (nv.hien === 'loi') return 'ngoiOmDau';
+  if (nv.hien === 'ngu') return 'nguGuc';
+  if (nv.hien === 'nghi') return 'ngoiNghi';
+  return TU_THE_THEO_VIEC[nv.phien.viec?.loai] || 'ngoiGo';
 }
 
 function xoayVe(hienTai, dich, buoc) {

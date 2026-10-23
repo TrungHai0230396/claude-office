@@ -53,6 +53,10 @@ Cài giúp tôi Claude Office theo mục "Cài từ đầu tới cuối" trong R
 
 Được duyệt xong (phiên chạy tiếp) thì sếp đóng dấu "ĐÃ DUYỆT" và người đó quay về bàn.
 
+Muốn sai người đi đâu thì nhắn phiên một câu ngắn: "đi ngồi công viên", "đi ra lấy cf", "đi dạo vườn",
+"ra sofa", "đi uống nước", "ra bàn cao tán gẫu", "vô ghế làm việc". Xong lượt, người đó tới đúng chỗ và ở
+yên đó (lấy cà phê thì pha xong ra bàn cao đứng uống) tới khi bạn nhờ việc khác.
+
 Trang chỉ làm nổi việc cần bạn, phần còn lại để chìm cho đỡ rối mắt:
 
 - **Bảng bên**: "Chờ bạn trả lời" là thẻ to (câu hỏi, đã chờ bao lâu, nút **Mở để trả lời** mở đúng
