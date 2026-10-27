@@ -11,13 +11,16 @@ import { TheoDoiPhien } from './lib/theo-doi.js';
 import { QuanLyPhienVP } from './lib/phien-vp.js';
 import { LayMucDung } from './lib/lay-muc-dung.js';
 import { TuXa } from './lib/tu-xa.js';
+import { BotTelegram } from './lib/telegram.js';
+import { TEP_LUU } from './lib/phien-vp.js';
 import { taoKhoa, kiemLenh, LoiNguoiDung } from './lib/bao-ve.js';
 
 const GOC = path.dirname(fileURLToPath(import.meta.url));
 const WEB = path.join(GOC, 'public');
 const CONG = Number(process.env.PORT) || 5230;
 const MAY = '127.0.0.1';
-const THAN_TOI_DA = 256 * 1024;
+// Đủ cho vài ảnh đã thu nhỏ và tệp gửi kèm (mỗi tệp tối đa 20 MB, xem lib/dinh-kem.js).
+const THAN_TOI_DA = 40 * 1024 * 1024;
 const KIEU = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -25,6 +28,7 @@ const KIEU = {
   '.json': 'application/json; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
   '.txt': 'text/plain; charset=utf-8',
 };
 // Không cho trang khác nhúng văn phòng vào khung (chống lừa bấm "Cho phép"), không lộ địa chỉ khi bấm link.
@@ -48,6 +52,10 @@ const quanLy = DIEU_KHIEN ? new QuanLyPhienVP({ khiDoi: () => theoDoi?.phat() })
 const nguoiNghe = new Set();
 // Mở trên điện thoại qua Tailscale (tailscale serve → 127.0.0.1): chỉ nhận đúng tài khoản chủ máy.
 const tuXa = new TuXa();
+// Bot Telegram riêng (lib/telegram.js): chỉ chạy ở chế độ điều khiển, khi bạn đã cất token vào Keychain.
+const botTg = quanLy
+  ? new BotTelegram({ quanLy, layAnh: () => theoDoi.anh(), dsThuMuc: () => dsThuMuc(), tepLuu: path.join(path.dirname(TEP_LUU), 'telegram.json') })
+  : null;
 // Mức dùng gói lấy thẳng từ Claude Code (/usage), chỉ khi có trang đang mở. Chế độ chỉ xem thì không chạy
 // Claude Code, chỉ đọc tệp app Claude ghi.
 const layMucDung = DIEU_KHIEN ? new LayMucDung({ coNguoiXem: () => nguoiNghe.size > 0, khiDoi: () => theoDoi?.phat() }) : null;
@@ -144,6 +152,14 @@ async function lenhVP(req, res, url, truyCap) {
   if (tuChoi) return guiJson(res, 403, { loi: tuChoi });
   const phan = url.pathname.split('/').filter(Boolean); // ['api','vp',...]
   try {
+    if (phan[2] === 'telegram' && botTg) {
+      if (doc && phan.length === 3) return guiJson(res, 200, botTg.trangThai());
+      if (!doc && phan[3] === 'ngat') await botTg.ngat();
+      else if (!doc && phan[3] === 'ma-moi') botTg.maMoi();
+      else return guiJson(res, 404, { loi: 'Không có lệnh này' });
+      return guiJson(res, 200, botTg.trangThai());
+    }
+    if (doc && phan[2] === 'mo-hinh' && phan.length === 3) return guiJson(res, 200, { ds: await quanLy.danhSachMoHinh() });
     if (doc && phan[2] === 'phien' && phan[4] === 'hoi-thoai' && phan.length === 5) {
       const tu = Math.max(0, Number(url.searchParams.get('tu')) || 0);
       return guiJson(res, 200, quanLy.hoiThoai(phan[3], tu));
@@ -151,14 +167,16 @@ async function lenhVP(req, res, url, truyCap) {
     if (!doc && phan[2] === 'phien') {
       const than = await docThan(req);
       if (phan.length === 3) {
-        const id = await quanLy.tao({ cwd: than.thuMuc, loiNhan: than.loiNhan, cheDo: than.cheDo });
+        const id = await quanLy.tao({ cwd: than.thuMuc, loiNhan: than.loiNhan, cheDo: than.cheDo, moHinh: than.moHinh, effort: than.effort, anh: than.anh, tep: than.tep });
         return guiJson(res, 200, { ok: true, id });
       }
       const id = phan[3];
-      if (phan.length === 5 && phan[4] === 'gui') await quanLy.gui(id, than.loiNhan);
+      if (phan.length === 5 && phan[4] === 'gui') await quanLy.gui(id, than.loiNhan, { anh: than.anh, tep: than.tep });
       else if (phan.length === 5 && phan[4] === 'tra-loi') quanLy.traLoi(id, than);
       else if (phan.length === 5 && phan[4] === 'dung') await quanLy.dung(id);
       else if (phan.length === 5 && phan[4] === 'che-do') await quanLy.doiCheDo(id, than.cheDo);
+      else if (phan.length === 5 && phan[4] === 'mo-hinh') await quanLy.doiMoHinh(id, than.moHinh);
+      else if (phan.length === 5 && phan[4] === 'effort') await quanLy.doiEffort(id, than.effort);
       else if (phan.length === 5 && phan[4] === 'dong') quanLy.dong(id, than.xoa === true);
       else return guiJson(res, 404, { loi: 'Không có lệnh này' });
       return guiJson(res, 200, { ok: true });
@@ -216,6 +234,7 @@ const mayChu = http.createServer(async (req, res) => {
 theoDoi.khiDoi((anh) => {
   const goi = `event: trang-thai\ndata: ${JSON.stringify({ ...anh, lanChay: LAN_CHAY })}\n\n`;
   for (const { res } of nguoiNghe) res.write(goi);
+  botTg?.baoPhienApp(anh.phien);
 });
 setInterval(() => {
   for (const { res } of nguoiNghe) res.write(': giu\n\n');
@@ -247,6 +266,7 @@ await quanLy?.napLai();
 theoDoi.batDau();
 layMucDung?.batDau();
 tuXa.batDau();
+botTg?.batDau();
 mayChu.listen(CONG, MAY, () => {
   console.log(`Claude Office: http://${MAY}:${CONG}`);
 });

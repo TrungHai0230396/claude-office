@@ -4,7 +4,7 @@
 //   - thông báo chỉ khi có người mới xin duyệt hay vừa gặp lỗi
 //   - phiên do văn phòng chạy: cho phép ngay trên thẻ chờ, chat và trả lời trong thẻ chi tiết (dieu-khien.js)
 import * as THREE from 'three';
-import { coDieuKhien, lenh, KhungChat, HopGiaoViec, TEN_CHE_DO, TU_XA } from './dieu-khien.js';
+import { coDieuKhien, lenh, KhungChat, HopGiaoViec, HopTelegram, TEN_CHE_DO, TU_XA } from './dieu-khien.js';
 
 export const TEN_TRANG_THAI = { lam: 'Đang làm', cho: 'Chờ bạn', loi: 'Gặp lỗi', nghi: 'Đang nghỉ', ngu: 'Ngủ gật' };
 export const LOAI_DUYET = {
@@ -105,6 +105,9 @@ export class GiaoDien {
     this.choChon = null;
     this.nutGiao = document.getElementById('nut-giao');
     this.nutGiao.addEventListener('click', () => this.hopGiao?.mo());
+    this.hopTg = coDieuKhien() ? new HopTelegram() : null;
+    this.nutTg = document.getElementById('nut-tg');
+    this.nutTg.addEventListener('click', () => this.hopTg?.mo());
 
     document.getElementById('nut-am').addEventListener('click', () => {
       this.coAm = !this.coAm;
@@ -246,6 +249,7 @@ export class GiaoDien {
     // Dữ liệu mẫu: ẩn. Mở từ điện thoại mà máy chủ ở chế độ chỉ xem: không giao được gì, ẩn luôn.
     this.nutGiao.classList.toggle('an', bat === undefined || (TU_XA && !(bat === true && coDieuKhien())));
     this.hopGiao.datVanPhong(bat === true && coDieuKhien());
+    this.nutTg.classList.toggle('an', !(bat === true && this.hopTg));
   }
 
   // Phiên vừa tạo chưa có trong ảnh chụp: chờ lần cập nhật tới rồi mới chọn (để máy quay tìm được người).

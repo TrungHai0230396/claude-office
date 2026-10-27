@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { kiemLenh, kiemThuMuc, kiemCheDo, kiemTin, hostHopLe, taoKhoa, TEN_DAU_KHOA, LoiQuyen } from '../lib/bao-ve.js';
+import { kiemLenh, kiemThuMuc, kiemCheDo, kiemMoHinh, kiemEffort, kiemTin, hostHopLe, taoKhoa, TEN_DAU_KHOA, LoiQuyen } from '../lib/bao-ve.js';
 
 const KHOA = 'khoa-thu-123';
 const dau = (them = {}) => ({ host: '127.0.0.1:5230', origin: 'http://127.0.0.1:5230', 'content-type': 'application/json', [TEN_DAU_KHOA]: KHOA, ...them });
@@ -53,6 +53,18 @@ test('chế độ quyền: không bao giờ nhận chế độ bỏ qua quyền'
   assert.equal(kiemCheDo('plan'), 'plan');
   assert.equal(kiemCheDo('auto'), 'auto');
   for (const c of ['bypassPermissions', 'dontAsk', 'xyz']) assert.throws(() => kiemCheDo(c));
+});
+
+test('model: bí danh hay mã model; trống hay default là mặc định; giá trị lạ thì từ chối', () => {
+  for (const m of [undefined, null, '', 'default']) assert.equal(kiemMoHinh(m), '');
+  for (const m of ['opus', 'sonnet[1m]', 'claude-opus-5-5', 'claude-haiku-4-5-20251001']) assert.equal(kiemMoHinh(m), m);
+  for (const m of ['--dangerously-skip-permissions', 'opus; rm -rf ~', 'a b', 'x'.repeat(81), 42, {}]) assert.throws(() => kiemMoHinh(m));
+});
+
+test('effort: chỉ nhận các mức của Claude Code; trống hay default là mặc định', () => {
+  for (const e of [undefined, null, '', 'default']) assert.equal(kiemEffort(e), '');
+  for (const e of ['low', 'medium', 'high', 'xhigh', 'max']) assert.equal(kiemEffort(e), e);
+  for (const e of ['ultra', 'HIGH', 3, {}]) assert.throws(() => kiemEffort(e));
 });
 
 test('tin nhắn trống hay quá dài thì từ chối', () => {

@@ -309,12 +309,21 @@ function datKhung(lech = lechHienTai) {
   else camera.clearViewOffset();
   camera.updateProjectionMatrix();
 }
+// Đổi cỡ khung: trên điện thoại chiều cao đổi liên tục khi thanh địa chỉ thu vào/giãn ra, nên chỉ đổi cỡ khung
+// vẽ, giữ nguyên máy quay; chỉ canh lại góc nhìn khi chiều ngang đổi hẳn (xoay máy, kéo cửa sổ).
+let rongTruoc = window.innerWidth;
+let henDoiCo = null;
 window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
   lechHienTai = lechMuc();
   datKhung();
-  datGioiHan();
-  if (gocHienTai) veGoc(gocHienTai, true);
+  clearTimeout(henDoiCo);
+  henDoiCo = setTimeout(() => {
+    datGioiHan();
+    const doiNgang = Math.abs(window.innerWidth - rongTruoc) > 40;
+    rongTruoc = window.innerWidth;
+    if (doiNgang && gocHienTai) veGoc(gocHienTai, true);
+  }, 200);
 });
 lechHienTai = lechMuc();
 datKhung();

@@ -1,0 +1,17 @@
+{
+  "name": "Claude Office",
+  "short_name": "Văn phòng",
+  "description": "Văn phòng 3D cho các phiên Claude Code trên máy Mac: xem, giao việc, chat và duyệt.",
+  "lang": "vi",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1c1a18",
+  "theme_color": "#1c1a18",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

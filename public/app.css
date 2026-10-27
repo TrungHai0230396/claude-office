@@ -352,7 +352,18 @@ button { font: inherit; color: inherit; }
 @keyframes dangNghe { 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--loi) 25%, transparent); } }
 .hop-giao .truong { position: relative; }
 .hop-giao .nut-noi-hop { position: absolute; right: 8px; bottom: 8px; height: 34px; width: 34px; border-radius: 50%; }
-.hop-giao .nut-noi-hop ~ * , .hop-giao textarea { padding-right: 48px; }
+.nut-kem { width: 38px; padding: 0; font-size: 17px; flex: none; }
+.hop-giao .nut-kem-hop { position: absolute; right: 48px; bottom: 8px; height: 34px; width: 34px; border-radius: 50%; }
+.hop-giao textarea { padding-right: 88px; }
+.khay { display: flex; flex-wrap: wrap; gap: 6px; flex: none; }
+.khay .kem { position: relative; border: 1px solid var(--vien); border-radius: 10px; background: var(--mat-dac); overflow: hidden; display: flex; align-items: center; }
+.khay .kem img { display: block; width: 56px; height: 56px; object-fit: cover; }
+.khay .kem.tep { padding: 6px 28px 6px 9px; font-size: 12.5px; max-width: 220px; }
+.khay .ten-tep { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.khay .bo-kem { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border-radius: 50%; border: 0; background: rgba(0, 0, 0, .55); color: #fff; font-size: 11px; line-height: 20px; padding: 0; cursor: pointer; }
+.kem-tin { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.kem-tin img { max-width: 160px; max-height: 160px; border-radius: 10px; display: block; }
+.kem-tin .ten-tep { font-size: 12.5px; background: var(--mat-chim); border-radius: 8px; padding: 3px 8px; }
 .nut-phu { flex: none; display: flex; gap: 6px; flex-wrap: wrap; }
 .nut-phu .phai { margin-left: auto; color: var(--chu-mo); }
 .che-do-chat { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--chu-phu); }
@@ -375,6 +386,9 @@ button { font: inherit; color: inherit; }
 .hop-giao fieldset input { margin: 0; accent-color: var(--nhan); flex: none; transform: translateY(1px); }
 .hop-giao fieldset input:disabled + b { color: var(--chu-mo); }
 .hop-giao fieldset span { color: var(--chu-phu); font-size: 12.5px; }
+.hop-giao .hang-mo-hinh { display: flex; gap: 8px; flex-wrap: wrap; }
+.hop-giao .hang-mo-hinh select[name="moHinh"] { flex: 2 1 180px; width: auto; }
+.hop-giao .hang-mo-hinh select[name="effort"] { flex: 1 1 140px; width: auto; }
 .hop-giao .tat-web { margin: 0; font-size: 12.5px; color: var(--cho-dam); }
 .hop-giao .nut-dong { display: flex; justify-content: flex-end; gap: 8px; }
 .hop-giao .loi-hop { margin: 0; font-size: 13px; color: var(--loi); background: var(--loi-nen); border-radius: 10px; padding: 8px 10px; white-space: pre-wrap; }
@@ -485,3 +499,15 @@ button { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .nhan.lam .cham-tt { animation: none; }
 }
+
+/* ---------- hộp Telegram ---------- */
+#hop-telegram .noi-dung-tg { display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; }
+#hop-telegram .noi-dung-tg p { margin: 0; }
+#hop-telegram .phu { color: var(--chu-phu); font-size: 12.5px; }
+#hop-telegram .canh-bao { color: var(--loi); }
+#hop-telegram .buoc { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+#hop-telegram a { color: var(--nhan-dam); font-weight: 600; }
+#hop-telegram .lenh-tg { display: block; font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--mat-chim); border-radius: 8px; padding: 7px 9px; overflow-x: auto; white-space: nowrap; user-select: all; }
+#hop-telegram li .lenh-tg { display: inline-block; padding: 2px 6px; }
+#hop-telegram li .ma-tg { font-size: 16px; font-weight: 700; letter-spacing: 2px; }
+

@@ -15,6 +15,247 @@ function el(the, lop, chu) {
   return e;
 }
 
+// ---------- Telegram ----------
+// Hộp xem trạng thái bot Telegram: chưa có token thì chỉ cách tạo bot và cất token; có rồi thì hiện mã ghép
+// (link mở thẳng bot); đã ghép thì cho ngắt.
+export class HopTelegram {
+  constructor() {
+    this.hop = document.getElementById('hop-telegram');
+    this.noiDung = this.hop.querySelector('.noi-dung-tg');
+    this.baoLoi = this.hop.querySelector('.loi-hop');
+    // Từ Telegram quay lại trang thì xem lại ngay: mã có thể đã đổi, hoặc đã ghép xong.
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && this.hop.open) this.ve();
+    });
+  }
+
+  async mo() {
+    await this.ve();
+    this.hop.showModal();
+    clearInterval(this.hen);
+    // Đang chờ ghép thì tự xem lại mỗi vài giây để thấy ngay khi đã nối.
+    this.hen = setInterval(() => (this.hop.open ? this.ve() : clearInterval(this.hen)), 4000);
+  }
+
+  async ve() {
+    let tt;
+    try {
+      tt = await lenh.telegram();
+      this.baoLoi.classList.add('an');
+    } catch (e) {
+      this.baoLoi.textContent = e.message;
+      this.baoLoi.classList.remove('an');
+      return;
+    }
+    const ky = JSON.stringify(tt);
+    if (ky === this.kyCu) return;
+    this.kyCu = ky;
+    const n = this.noiDung;
+    n.textContent = '';
+    const p = (chu, lop = '') => n.append(el('p', lop, chu));
+    if (!tt.co) {
+      p('Nối văn phòng với một bot Telegram riêng: báo ngay khi phiên cần duyệt (bấm Cho phép ngay trong Telegram), giao việc bằng tin nhắn hay ảnh. Nội dung đi qua máy chủ Telegram.', 'phu');
+      if (tt.loi) p(tt.loi, 'canh-bao');
+      const ol = el('ol', 'buoc');
+      for (const b of [
+        'Trong Telegram, mở @BotFather → /newbot → đặt tên và username (kết thúc bằng "bot").',
+        'BotFather gửi lại token. Đừng gửi token cho ai.',
+        'Trên Mac, chạy lệnh dưới trong Terminal, dán token khi được hỏi (hỏi 2 lần).',
+      ])
+        ol.append(el('li', '', b));
+      n.append(ol);
+      const lenhCat = el('code', 'lenh-tg', 'security add-generic-password -U -s claude-office-telegram -a "$USER" -w');
+      n.append(lenhCat);
+      p('Văn phòng tự nhận token trong vòng một phút.', 'phu');
+      return;
+    }
+    if (tt.chu) {
+      p(`✅ Đã nối bot ${tt.bot} với Telegram ${tt.chu.ten}.`);
+      p('Bot báo khi phiên cần duyệt, xong lượt hay gặp lỗi. Nhắn việc cho bot để giao việc; /giup để xem lệnh.', 'phu');
+      const b = nutBam('tu-choi', 'Ngắt Telegram', async (nb) => {
+        nb.disabled = true;
+        await lenh.telegramNgat().catch(() => {});
+        this.kyCu = '';
+        await this.ve();
+      });
+      n.append(b);
+      return;
+    }
+    p(`Bot ${tt.bot} đã sẵn sàng. Còn bước ghép với tài khoản Telegram của bạn:`);
+    const ol = el('ol', 'buoc');
+    const li = el('li');
+    if (tt.ghep?.link) {
+      const a = el('a', '', 'Mở bot trong Telegram');
+      a.href = tt.ghep.link;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      li.append(a, ', bấm Start (Bắt đầu) nếu Telegram hiện nút này.');
+      ol.append(li);
+    }
+    const li2 = el('li');
+    li2.append('Bot chưa báo "Đã nối" thì nhắn cho bot mã: ', el('code', 'lenh-tg ma-tg', tt.ghep?.ma || ''));
+    ol.append(li2);
+    n.append(ol);
+    const phut = Math.max(1, Math.round(((tt.ghep?.het || Date.now()) - Date.now()) / 60e3));
+    p(`Mã ghép dùng một lần, hết hạn sau ${phut} phút. Chỉ tài khoản gửi đúng mã mới điều khiển được bot.`, 'phu');
+    n.append(
+      nutBam('', 'Lấy mã mới', async () => {
+        await lenh.telegramMaMoi().catch(() => {});
+        this.kyCu = '';
+        await this.ve();
+      }),
+    );
+  }
+}
+
+// ---------- đính kèm ảnh, tệp ----------
+// Ảnh được thu nhỏ ngay trên máy (cạnh dài ≤ 1568 điểm ảnh, JPEG) rồi gửi cho Claude xem; tệp khác gửi nguyên,
+// máy chủ lưu vào thư mục của văn phòng và báo đường dẫn cho Claude đọc.
+const CANH_ANH = 1568;
+const TEP_TOI_DA = 20 * 1024 * 1024;
+
+function moAnh(tep) {
+  return new Promise((xong, hong) => {
+    const url = URL.createObjectURL(tep);
+    const i = new Image();
+    i.onload = () => xong({ i, url });
+    i.onerror = () => {
+      URL.revokeObjectURL(url);
+      hong(new Error('Không đọc được ảnh ' + tep.name));
+    };
+    i.src = url;
+  });
+}
+
+async function docAnh(tep) {
+  const { i, url } = await moAnh(tep);
+  try {
+    const ve = (canh, chatLuong) => {
+      const ti = Math.min(1, canh / Math.max(i.naturalWidth, i.naturalHeight));
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(i.naturalWidth * ti));
+      c.height = Math.max(1, Math.round(i.naturalHeight * ti));
+      const g = c.getContext('2d');
+      g.fillStyle = '#fff';
+      g.fillRect(0, 0, c.width, c.height);
+      g.drawImage(i, 0, 0, c.width, c.height);
+      return c.toDataURL('image/jpeg', chatLuong);
+    };
+    const lon = ve(CANH_ANH, 0.88);
+    return { kieu: 'anh', ten: tep.name || 'anh.jpg', loai: 'image/jpeg', du: lon.slice(lon.indexOf(',') + 1), nho: ve(200, 0.72) };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function docTep(tep) {
+  if (tep.size > TEP_TOI_DA) throw new Error(`Tệp ${tep.name} lớn quá 20 MB`);
+  const b = new Uint8Array(await tep.arrayBuffer());
+  let s = '';
+  for (let k = 0; k < b.length; k += 0x8000) s += String.fromCharCode(...b.subarray(k, k + 0x8000));
+  return { kieu: 'tep', ten: tep.name || 'tep', du: btoa(s), co: tep.size };
+}
+
+export class KhayDinhKem {
+  constructor(baoLoi = () => {}) {
+    this.baoLoi = baoLoi;
+    this.ds = [];
+    this.goc = el('div', 'khay an');
+    this.nhap = el('input');
+    this.nhap.type = 'file';
+    this.nhap.multiple = true;
+    this.nhap.className = 'an';
+    this.nut = el('button', 'nut nut-kem', '📎');
+    this.nut.type = 'button';
+    this.nut.title = 'Gửi kèm ảnh hay tệp (cũng dán được ảnh bằng ⌘V, hay kéo thả vào đây)';
+    this.nut.setAttribute('aria-label', 'Đính kèm ảnh hay tệp');
+    this.nut.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.nhap.click();
+    });
+    this.nhap.addEventListener('change', () => {
+      this.them([...this.nhap.files]);
+      this.nhap.value = '';
+    });
+  }
+
+  // Cho phép dán ảnh và kéo thả tệp vào một ô.
+  ganVao(o) {
+    o.addEventListener('paste', (e) => {
+      const tep = [...(e.clipboardData?.files || [])];
+      if (tep.length) {
+        e.preventDefault();
+        this.them(tep);
+      }
+    });
+    o.addEventListener('dragover', (e) => e.preventDefault());
+    o.addEventListener('drop', (e) => {
+      const tep = [...(e.dataTransfer?.files || [])];
+      if (tep.length) {
+        e.preventDefault();
+        this.them(tep);
+      }
+    });
+  }
+
+  async them(dsTep) {
+    for (const tep of dsTep) {
+      const laAnh = /^image\//.test(tep.type);
+      if ((laAnh && this.ds.filter((x) => x.kieu === 'anh').length >= 6) || (!laAnh && this.ds.filter((x) => x.kieu === 'tep').length >= 5)) {
+        this.baoLoi(laAnh ? 'Mỗi lần gửi tối đa 6 ảnh' : 'Mỗi lần gửi tối đa 5 tệp');
+        continue;
+      }
+      try {
+        this.ds.push(laAnh ? await docAnh(tep) : await docTep(tep));
+      } catch (e) {
+        this.baoLoi(e.message);
+      }
+    }
+    this._ve();
+  }
+
+  _ve() {
+    this.goc.textContent = '';
+    this.goc.classList.toggle('an', !this.ds.length);
+    this.ds.forEach((x, k) => {
+      const o = el('div', 'kem ' + x.kieu);
+      if (x.kieu === 'anh') {
+        const img = el('img');
+        img.src = x.nho;
+        img.alt = x.ten;
+        o.append(img);
+      } else o.append(el('span', 'ten-tep', '📄 ' + x.ten));
+      const bo = el('button', 'bo-kem', '✕');
+      bo.type = 'button';
+      bo.title = 'Bỏ';
+      bo.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.ds.splice(k, 1);
+        this._ve();
+      });
+      o.append(bo);
+      this.goc.append(o);
+    });
+  }
+
+  coGi() {
+    return this.ds.length > 0;
+  }
+
+  layRa() {
+    return {
+      anh: this.ds.filter((x) => x.kieu === 'anh').map(({ loai, du, nho }) => ({ loai, du, nho })),
+      tep: this.ds.filter((x) => x.kieu === 'tep').map(({ ten, du }) => ({ ten, du })),
+    };
+  }
+
+  xoaHet() {
+    this.ds = [];
+    this._ve();
+  }
+}
+
 // ---------- nói thay gõ ----------
 // Nhận giọng nói tiếng Việt bằng Web Speech API của trình duyệt (Safari, Chrome; trình duyệt gửi tiếng nói cho
 // Apple/Google nhận dạng). Chữ nhận được điền vào ô để bạn xem lại rồi mới bấm gửi: việc giao đi là chạy lệnh
@@ -107,14 +348,101 @@ async function goi(duong, than) {
 const duongPhien = (id, viec) => `/api/vp/phien/${encodeURIComponent(id)}/${viec}`;
 export const lenh = {
   thuMuc: () => goi('/api/thu-muc'),
-  tao: (thuMuc, loiNhan, cheDo) => goi('/api/vp/phien', { thuMuc, loiNhan, cheDo }),
-  gui: (id, loiNhan) => goi(duongPhien(id, 'gui'), { loiNhan }),
+  tao: (thuMuc, loiNhan, cheDo, kem = {}) => goi('/api/vp/phien', { thuMuc, loiNhan, cheDo, ...kem }),
+  gui: (id, loiNhan, kem = {}) => goi(duongPhien(id, 'gui'), { loiNhan, ...kem }),
   traLoi: (id, tl) => goi(duongPhien(id, 'tra-loi'), tl),
   dung: (id) => goi(duongPhien(id, 'dung'), {}),
   doiCheDo: (id, cheDo) => goi(duongPhien(id, 'che-do'), { cheDo }),
+  doiMoHinh: (id, moHinh) => goi(duongPhien(id, 'mo-hinh'), { moHinh }),
+  doiEffort: (id, effort) => goi(duongPhien(id, 'effort'), { effort }),
+  moHinh: () => goi('/api/vp/mo-hinh'),
   dong: (id, xoa = false) => goi(duongPhien(id, 'dong'), { xoa }),
   hoiThoai: (id, tu) => goi(duongPhien(id, 'hoi-thoai') + '?tu=' + tu),
+  telegram: () => goi('/api/vp/telegram'),
+  telegramNgat: () => goi('/api/vp/telegram/ngat', {}),
+  telegramMaMoi: () => goi('/api/vp/telegram/ma-moi', {}),
 };
+
+// ---------- model ----------
+// Danh sách model tài khoản dùng được (máy chủ hỏi Claude Code, không tốn lượt). Lấy một lần cho cả trang.
+let hoiMoHinh = null;
+function layMoHinh() {
+  hoiMoHinh ??= lenh
+    .moHinh()
+    .then((r) => r.ds || [])
+    .catch((e) => {
+      hoiMoHinh = null;
+      throw e;
+    });
+  return hoiMoHinh;
+}
+
+// Đổ danh sách model vào ô chọn: bí danh (Opus, Sonnet…) trước, bản cụ thể vào nhóm "Bản khác". Giá trị ''
+// là mặc định của Claude Code. Phiên đang dùng mã đầy đủ (vd. claude-opus-5-5) thì chọn bí danh trỏ tới mã đó.
+function veChonMoHinh(chon, ds, dangChon) {
+  chon.textContent = '';
+  const them = (cha, gia, chu, moTa = '') => {
+    const o = el('option', '', chu);
+    o.value = gia;
+    if (moTa) o.title = moTa;
+    cha.append(o);
+  };
+  const chinh = ds.filter((m) => !m.gia.startsWith('claude-'));
+  const khac = ds.filter((m) => m.gia.startsWith('claude-'));
+  if (!chinh.some((m) => m.gia === 'default')) them(chon, '', 'Mặc định');
+  for (const m of chinh) {
+    const tro = m.gia === 'default' && ds.find((x) => x.gia !== 'default' && x.that && x.that === m.that);
+    them(chon, m.gia === 'default' ? '' : m.gia, m.gia === 'default' ? (tro ? `Mặc định (${tro.ten})` : 'Mặc định') : m.ten, m.moTa);
+  }
+  if (khac.length) {
+    const nhom = el('optgroup');
+    nhom.label = 'Bản khác';
+    for (const m of khac) them(nhom, m.gia, m.ten, m.moTa);
+    chon.append(nhom);
+  }
+  let gia = dangChon || '';
+  if (gia && !ds.some((m) => m.gia === gia)) {
+    const khop = chinh.find((m) => m.gia !== 'default' && m.that === gia) || khac.find((m) => m.that === gia);
+    if (khop) gia = khop.gia;
+    else them(chon, gia, gia);
+  }
+  chon.value = gia;
+}
+
+// Effort (như /effort trong Claude Code): Claude nghĩ kỹ tới đâu. Mỗi model có các mức riêng (vài model không có).
+const TEN_EFFORT = { low: 'Thấp (low)', medium: 'Vừa (medium)', high: 'Cao (high)', xhigh: 'Rất cao (xhigh)', max: 'Tối đa (max)' };
+
+function dongMoHinh(ds, gia) {
+  const g = gia || 'default';
+  return ds.find((x) => x.gia === g) || ds.find((x) => x.gia !== 'default' && x.that === g);
+}
+
+// Các mức effort của một model ('' là mặc định); chưa có danh sách model thì cho đủ các mức, máy chủ sẽ kiểm.
+function mucEffortCua(ds, gia) {
+  const m = dongMoHinh(ds, gia);
+  return m ? m.effort || [] : Object.keys(TEN_EFFORT);
+}
+
+// Nhãn dòng mặc định, kèm mức Claude Code tự dùng cho model đó, vd. "Mặc định (medium)".
+function tenEffortMacDinh(ds, gia, dau = 'Mặc định') {
+  const md = dongMoHinh(ds, gia)?.effortMacDinh;
+  return md ? `${dau} (${md})` : dau;
+}
+
+function veChonEffort(chon, muc, dangChon, tenMacDinh = 'Mặc định') {
+  chon.textContent = '';
+  const them = (gia, chu) => {
+    const o = el('option', '', chu);
+    o.value = gia;
+    chon.append(o);
+  };
+  them('', tenMacDinh);
+  for (const e of muc) them(e, TEN_EFFORT[e] || e);
+  if (dangChon && !muc.includes(dangChon)) them(dangChon, TEN_EFFORT[dangChon] || dangChon);
+  chon.value = dangChon || '';
+  chon.disabled = !muc.length && !dangChon;
+  chon.title = chon.disabled ? 'Model này không có mức effort' : 'Effort: Claude nghĩ kỹ tới đâu. Cao hơn thì kỹ hơn, chậm hơn, hao mức dùng hơn.';
+}
 
 // Bấm một nút gửi lệnh: khoá nút trong lúc chờ, lỗi thì báo.
 async function chayLenh(nuts, viec, baoLoi) {
@@ -212,6 +540,11 @@ export class HopGiaoViec {
       noi.classList.add('nut-noi-hop');
       this.viec.after(noi);
     }
+    this.kem = new KhayDinhKem((chu) => this._loi(chu));
+    this.kem.nut.classList.add('nut-kem-hop');
+    this.viec.after(this.kem.nut);
+    this.viec.closest('label').after(this.kem.goc, this.kem.nhap);
+    this.kem.ganVao(this.viec);
     try {
       this.viec.value = sessionStorage.getItem('vpc-giao-viec') || '';
     } catch {}
@@ -260,6 +593,7 @@ export class HopGiaoViec {
   _hienNoiChay() {
     const app = this._noiChay() === 'app';
     this.form.querySelector('.che-do').classList.toggle('an', app);
+    this.form.querySelector('.mo-hinh').classList.toggle('an', app);
     this.nutGiao.textContent = app ? 'Mở trong app Claude' : 'Giao việc';
   }
 
@@ -277,9 +611,34 @@ export class HopGiaoViec {
       const r = che && this.form.querySelector(`input[name="cheDo"][value="${che}"]`);
       if (r) r.checked = true;
     } catch {}
+    this._napMoHinh();
     await this._napThuMuc();
     this.hop.showModal();
     this.viec.focus();
+  }
+
+  // Ô chọn model: hiện ngay lựa chọn lần trước, danh sách đầy đủ tới sau (lần đầu mất vài giây).
+  async _napMoHinh() {
+    const chon = this.form.elements.moHinh;
+    const chonEf = this.form.elements.effort;
+    let nho = '';
+    let nhoEf = '';
+    try {
+      nho = localStorage.getItem('vpc-mo-hinh') || '';
+      nhoEf = localStorage.getItem('vpc-effort') || '';
+    } catch {}
+    // Đổi model thì danh sách mức effort đổi theo (mức đang chọn mà model mới không có thì về mặc định).
+    const veEf = (dang) => veChonEffort(chonEf, mucEffortCua(this.dsMoHinh || [], chon.value), dang, tenEffortMacDinh(this.dsMoHinh || [], chon.value, 'Effort mặc định'));
+    chon.onchange = () => veEf(mucEffortCua(this.dsMoHinh || [], chon.value).includes(chonEf.value) ? chonEf.value : '');
+    veChonMoHinh(chon, this.dsMoHinh || [], nho);
+    veEf(nhoEf);
+    if (this.dsMoHinh) return;
+    try {
+      this.dsMoHinh = await layMoHinh();
+      const dangEf = chonEf.value || nhoEf;
+      veChonMoHinh(chon, this.dsMoHinh, chon.value || nho);
+      veEf(mucEffortCua(this.dsMoHinh, chon.value).includes(dangEf) ? dangEf : '');
+    } catch {}
   }
 
   // Danh sách dự án đã thấy trong các phiên gần đây.
@@ -340,11 +699,15 @@ export class HopGiaoViec {
     const thuMuc = this.chon.value === '__khac' ? this.khac.value.trim() : this.chon.value;
     const loiNhan = this.viec.value.trim();
     const cheDo = this.form.elements.cheDo.value || 'default';
+    const moHinh = this.form.elements.moHinh.value || '';
+    const effort = this.form.elements.effort.value || '';
     try {
       localStorage.setItem('vpc-che-do', cheDo);
+      localStorage.setItem('vpc-mo-hinh', moHinh);
+      localStorage.setItem('vpc-effort', effort);
     } catch {}
     if (!thuMuc) return this._loi('Chọn hoặc gõ thư mục dự án.');
-    if (!loiNhan) return this._loi('Ghi việc cần làm trước đã.');
+    if (!loiNhan && !(this.kem.coGi() && this._noiChay() !== 'app')) return this._loi('Ghi việc cần làm trước đã.');
     if (this._noiChay() === 'app') {
       const day = this._dayDu(thuMuc);
       if (!day.startsWith('/')) return this._loi('Thư mục phải là đường dẫn đầy đủ (bắt đầu bằng / hoặc ~/).');
@@ -364,7 +727,8 @@ export class HopGiaoViec {
     await chayLenh(
       [this.nutGiao],
       async () => {
-        const { id } = await lenh.tao(thuMuc, loiNhan, cheDo);
+        const { id } = await lenh.tao(thuMuc, loiNhan, cheDo, { ...this.kem.layRa(), moHinh, effort });
+        this.kem.xoaHet();
         try {
           localStorage.setItem('vpc-thu-muc', thuMuc);
         } catch {}
@@ -402,9 +766,11 @@ export class KhungChat {
     this.nutGui = el('button', 'nut chinh', 'Gửi');
     this.nutGui.type = 'submit';
     const noi = nutNoi(this.nhap, (chu) => this._baoLoi(new Error(chu)));
-    this.form.append(...[this.nhap, noi, this.nutGui].filter(Boolean));
+    this.kem = new KhayDinhKem((chu) => this._baoLoi(new Error(chu)));
+    this.kem.ganVao(this.nhap);
+    this.form.append(...[this.kem.nut, this.nhap, noi, this.nutGui, this.kem.nhap].filter(Boolean));
     this.phu = el('div', 'nut-phu');
-    this.goc.append(this.log, this.hopDuyet, this.loi, this.form, this.phu);
+    this.goc.append(this.log, this.hopDuyet, this.loi, this.kem.goc, this.form, this.phu);
 
     this.id = null;
     this.tu = 0;
@@ -454,11 +820,13 @@ export class KhungChat {
       this.log.textContent = '';
       this.hopDuyet.classList.add('an');
       this.kyPhu = '';
+      this.kem.xoaHet();
       this.nhap.value = this.nhapTheoPhien.get(p.id) || '';
       this._coGian();
       this._anLoi();
     }
     this.demo = p.demo ? p : null;
+    this.pHien = p;
     this.nhap.placeholder = p.conChay ? 'Nhắn cho Claude…' : 'Nhắn để giao tiếp việc (phiên chạy lại từ chỗ cũ)…';
     this.nhap.title = 'Enter để gửi, Shift+Enter để xuống dòng';
     this._vePhu(p);
@@ -468,7 +836,7 @@ export class KhungChat {
   // Chỉ vẽ lại hàng nút khi trạng thái đổi: vẽ lại giữa lúc bấm thì cú bấm bị mất.
   _vePhu(p) {
     const chay = p.conChay && (p.trangThai === 'lam' || p.trangThai === 'cho');
-    const ky = `${p.id}|${chay}|${p.conChay}|${p.cheDo}`;
+    const ky = `${p.id}|${chay}|${p.conChay}|${p.cheDo}|${p.moHinh}|${p.effort}|${!!this.dsMoHinh}`;
     if (ky === this.kyPhu) return;
     this.kyPhu = ky;
     this.phu.textContent = '';
@@ -499,6 +867,57 @@ export class KhungChat {
     });
     nhan.append('Chế độ ', chon);
     this.phu.append(nhan);
+    // Đổi model ngay trong phiên (vd. việc khó thì chuyển sang model mạnh hơn).
+    const nhanMh = el('label', 'che-do-chat');
+    nhanMh.title = 'Model cho các câu trả lời sau của phiên này';
+    const chonMh = el('select');
+    veChonMoHinh(chonMh, this.dsMoHinh || [], p.moHinh);
+    if (!this.dsMoHinh && !p.demo)
+      layMoHinh()
+        .then((ds) => {
+          this.dsMoHinh = ds;
+          if (this.pHien) this._vePhu(this.pHien);
+        })
+        .catch(() => {});
+    chonMh.addEventListener('change', () => {
+      if (p.demo) {
+        veChonMoHinh(chonMh, this.dsMoHinh || [], p.moHinh);
+        return this._baoMau();
+      }
+      const muon = chonMh.value;
+      chonMh.disabled = true;
+      lenh
+        .doiMoHinh(p.id, muon)
+        .catch((e) => {
+          veChonMoHinh(chonMh, this.dsMoHinh || [], p.moHinh);
+          this._baoLoi(e);
+        })
+        .finally(() => (chonMh.disabled = false));
+    });
+    nhanMh.append('Model ', chonMh);
+    this.phu.append(nhanMh);
+    // Đổi effort ngay trong phiên; các mức theo model của phiên.
+    const nhanEf = el('label', 'che-do-chat');
+    const chonEf = el('select');
+    veChonEffort(chonEf, mucEffortCua(this.dsMoHinh || [], p.moHinh), p.effort, tenEffortMacDinh(this.dsMoHinh || [], p.moHinh));
+    nhanEf.title = chonEf.title;
+    chonEf.addEventListener('change', () => {
+      if (p.demo) {
+        chonEf.value = p.effort || '';
+        return this._baoMau();
+      }
+      const muon = chonEf.value;
+      chonEf.disabled = true;
+      lenh
+        .doiEffort(p.id, muon)
+        .catch((e) => {
+          chonEf.value = p.effort || '';
+          this._baoLoi(e);
+        })
+        .finally(() => (chonEf.disabled = false));
+    });
+    nhanEf.append('Effort ', chonEf);
+    this.phu.append(nhanEf);
     if (chay) this.phu.append(nutBam('nho', '■ Dừng', (b) => (p.demo ? this._baoMau() : chayLenh([b], () => lenh.dung(p.id), (e) => this._baoLoi(e)))));
     if (p.conChay) this.phu.append(nutBam('nho', 'Đóng phiên', (b) => (p.demo ? this._baoMau() : chayLenh([b], () => lenh.dong(p.id), (e) => this._baoLoi(e)))));
     const xoa = nutBam('nho phai', 'Xoá khỏi văn phòng', (b) => {
@@ -560,6 +979,18 @@ export class KhungChat {
     const d = el('div', 'tin ' + lop);
     if (m.loai === 'claude') d.append(veMarkdown(m.chu));
     else d.textContent = m.loai === 'congCu' ? '⚙ ' + m.chu : m.chu;
+    if (m.loai === 'ban' && (m.anh?.length || m.tep?.length)) {
+      const kem = el('div', 'kem-tin');
+      for (const src of m.anh || []) {
+        if (!/^data:image\/(jpeg|png|webp);base64,/.test(src)) continue;
+        const img = el('img');
+        img.src = src;
+        img.alt = 'Ảnh đã gửi';
+        kem.append(img);
+      }
+      for (const ten of m.tep || []) kem.append(el('span', 'ten-tep', '📄 ' + ten));
+      d.prepend(kem);
+    }
     if (m.luc) d.title = new Date(m.luc).toLocaleString('vi-VN');
     return d;
   }
@@ -683,11 +1114,12 @@ export class KhungChat {
 
   async _gui() {
     const chu = this.nhap.value.trim();
-    if (!chu || !this.id) return;
+    if ((!chu && !this.kem.coGi()) || !this.id) return;
     if (this.demo) return this._baoMau();
     const id = this.id;
-    const ok = await chayLenh([this.nutGui], () => lenh.gui(id, chu), (e) => this._baoLoi(e));
+    const ok = await chayLenh([this.nutGui], () => lenh.gui(id, chu, this.kem.layRa()), (e) => this._baoLoi(e));
     if (ok && id === this.id) {
+      this.kem.xoaHet();
       this.nhap.value = '';
       this.nhapTheoPhien.delete(id);
       this.luuNhap();

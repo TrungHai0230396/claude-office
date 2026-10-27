@@ -5,7 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Claude Office</title>
   <meta name="description" content="Mỗi phiên Claude là một người trong văn phòng 3D: đang làm thì gõ máy, xin duyệt thì sang phòng duyệt, xong việc thì đi uống cà phê.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='6' y='14' width='52' height='34' rx='5' fill='%23d97757'/%3E%3Crect x='11' y='19' width='42' height='24' rx='2' fill='%23fff7ef'/%3E%3Crect x='24' y='50' width='16' height='5' rx='2' fill='%23d97757'/%3E%3C/svg%3E">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <!-- Thêm vào màn hình chính (điện thoại): biểu tượng, tên ngắn dưới biểu tượng, mở toàn màn hình như app. -->
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="apple-mobile-web-app-title" content="Văn phòng">
+  <meta name="application-name" content="Văn phòng">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#ece6dc" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1c1a18" media="(prefers-color-scheme: dark)">
   <link rel="stylesheet" href="/app.css">
   <script type="importmap">
     { "imports": { "three": "/vendor/three.module.min.js" } }
@@ -45,6 +55,7 @@
     </div>
     <div class="nut-phai">
       <button id="nut-giao" class="nut chinh nut-giao an" title="Giao việc cho một phiên Claude mới chạy ngay trong văn phòng">＋ Giao việc</button>
+      <button id="nut-tg" class="nut-tron an" title="Điều khiển qua Telegram">📱</button>
       <button id="nut-am" class="nut-tron" title="Bật chuông khi có người xin duyệt" aria-pressed="false">🔕</button>
       <button id="nut-bang" class="nut-tron" title="Ẩn/hiện bảng bên" aria-expanded="true">☰</button>
     </div>
@@ -90,12 +101,28 @@
         <label><input type="radio" name="cheDo" value="auto"> <b>Tự động</b> <span>Claude Code tự duyệt việc an toàn, chỉ hỏi việc rủi ro</span></label>
         <label><input type="radio" name="cheDo" value="plan"> <b>Lên kế hoạch trước</b> <span>chỉ đọc và lên kế hoạch, bạn duyệt rồi mới làm</span></label>
       </fieldset>
+      <fieldset class="mo-hinh">
+        <legend>Model và effort</legend>
+        <div class="hang-mo-hinh">
+          <select name="moHinh" aria-label="Model"><option value="">Mặc định</option></select>
+          <select name="effort" aria-label="Effort" title="Effort: Claude nghĩ kỹ tới đâu. Cao hơn thì kỹ hơn, chậm hơn, hao mức dùng hơn."><option value="">Effort mặc định</option></select>
+        </div>
+      </fieldset>
       <p class="loi-hop an" role="alert"></p>
       <div class="nut-dong">
         <button type="button" class="nut" data-viec="huy">Huỷ</button>
         <button type="submit" class="nut chinh" data-viec="giao">Giao việc</button>
       </div>
       <p class="meo">⌘ + Enter để giao nhanh</p>
+    </form>
+  </dialog>
+
+  <dialog id="hop-telegram" class="hop-giao" aria-labelledby="hop-tg-tieu-de">
+    <form method="dialog">
+      <h2 id="hop-tg-tieu-de">Telegram</h2>
+      <div class="noi-dung-tg"></div>
+      <p class="loi-hop an" role="alert"></p>
+      <div class="nut-dong"><button type="submit" class="nut">Đóng</button></div>
     </form>
   </dialog>
 

@@ -21,6 +21,8 @@ Cài giúp tôi Claude Office theo mục "Cài từ đầu tới cuối" trong R
 > muốn chế độ nào (điều khiển qua web, hay chỉ xem và trả lời trong app Claude desktop như ban đầu) trước bước 4.
 > Chế độ chỉ xem xong ở bước 5, **không cần** đăng nhập hay cấp quyền gì thêm. Chế độ điều khiển qua web thì bước
 > đăng nhập Claude Code (`/login`) và cấp quyền macOS là việc của người dùng — tới đó thì dừng lại nhờ họ làm.
+> Bot Telegram (tuỳ chọn, bước 9): người dùng tự tạo bot và tự cất token vào Keychain; **không bao giờ** xin hay
+> nhận token bot qua chat.
 
 > **English.** *Claude Office* is a local 3D dashboard for the Claude desktop app's
 > Code sessions and Claude Code CLI sessions on macOS. Every session is a worker: running sessions type at
@@ -30,10 +32,13 @@ Cài giúp tôi Claude Office theo mục "Cài từ đầu tới cuối" trong R
 > local files. Two modes: **web control** (default) lets you start sessions from the office itself (Claude
 > Agent SDK, using your own Claude Code sign-in: Pro/Max plan or API key) and chat, allow tools, answer
 > questions and approve plans right there; **view-only** (`npm run cai-chi-xem`) keeps the original behaviour —
-> you answer in the Claude desktop app, and new tasks open there. The UI is in Vietnamese. Unofficial, not
-> affiliated with Anthropic.
+> you answer in the Claude desktop app, and new tasks open there. In web-control mode an optional **private
+> Telegram bot** (your own, made with @BotFather; token kept in the macOS Keychain) pings you when a session needs
+> you and lets you approve, answer, pick the model/effort and start tasks from your phone without the 3D page.
+> The UI is in Vietnamese. Unofficial, not affiliated with Anthropic.
 > **Installing with an AI agent?** Follow [Cài từ đầu tới cuối](#cài-từ-đầu-tới-cuối) step by step; in web-control
-> mode the sign-in and macOS permission steps must be done by the user (view-only mode needs neither).
+> mode the sign-in and macOS permission steps must be done by the user (view-only mode needs neither), and so is
+> creating the Telegram bot and storing its token — never ask for the token in chat.
 
 ![Claude Office chạy với dữ liệu mẫu](docs/anh-man-hinh.jpg)
 
@@ -68,11 +73,11 @@ Trang chỉ làm nổi việc cần bạn, phần còn lại để chìm cho đ�
 - **Thông báo** chỉ bật khi có người mới xin duyệt hay vừa gặp lỗi; nút 🔔 bật thêm chuông và thông báo
   của máy.
 - Giao diện theo chủ đề sáng/tối của máy (tối thì văn phòng lên đèn buổi tối).
-- **Máy quay như xem bản đồ**: kéo chuột (một ngón) để dời cảnh, lăn chuột (hai ngón) để phóng to/thu
-  nhỏ, không xoay. Cả phiên nhìn một hướng cố định (màn dọc thì nhìn từ phía tây cho văn phòng nằm
-  dọc); nút góc nhìn chỉ trượt và phóng tới khu đó. Chọn ai thì máy quay đứng yên, dưới chân người đó
-  hiện vòng sáng; người đó nằm ngoài màn hình thì cảnh chỉ trượt ngang tới, giữ nguyên độ xa. Gập/mở
-  bảng bên chỉ dịch cảnh sang ngang.
+- **Máy quay như xem bản đồ**: kéo chuột (một ngón) để dời cảnh, lăn chuột (chụm hai ngón) để phóng to/thu
+  nhỏ, kéo chuột phải (xoay hai ngón) để xoay góc nhìn. Mặc định nhìn một hướng cố định (màn dọc thì nhìn từ
+  phía tây cho văn phòng nằm dọc); nút **Toàn cảnh** đưa về hướng đó, các nút góc nhìn khác trượt và phóng tới
+  khu đó. Chọn ai thì máy quay đứng yên, dưới chân người đó hiện vòng sáng; người đó nằm ngoài màn hình thì cảnh
+  chỉ trượt ngang tới, giữ nguyên độ xa. Gập/mở bảng bên chỉ dịch cảnh sang ngang. Tải lại trang vẫn giữ góc nhìn.
 
 ## Cài từ đầu tới cuối
 
@@ -114,6 +119,10 @@ Cho người mới và cho phiên Claude khác làm giúp. Chạy lần lượt 
    Kiểm: bấm **＋ Giao việc**, chọn một dự án, giao một việc nhỏ; Claude xin quyền thì bấm **Cho phép**.
 8. **Về sau**: cập nhật `git pull && npm ci && npm run cai-tu-chay` (chế độ chỉ xem thì `npm run cai-chi-xem`);
    đổi chế độ thì chạy lệnh cài của chế độ kia; gỡ hẳn `npm run go-tu-chay`.
+9. **Tuỳ chọn, chế độ điều khiển qua web — bot Telegram, người dùng tự làm**: làm theo mục
+   [Nối bot](#nối-bot-người-dùng-tự-làm-khoảng-3-phút). *Phiên Claude làm giúp:* chỉ đưa người dùng lệnh
+   `security add-generic-password …` để họ tự dán token trong Terminal của họ, **không** xin token qua chat; kiểm
+   bằng hộp 📱 trên trang (báo "Bot @… đã sẵn sàng" là văn phòng đã nhận token).
 
 ## Chạy
 
@@ -150,7 +159,10 @@ Nút **＋ Giao việc** trên thanh trên: chọn dự án, ghi việc, rồi c
 - **Trong văn phòng** (chế độ điều khiển qua web): máy chủ chạy một phiên Claude Code mới qua
   [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk/overview); chọn Claude được tự làm tới đâu
   (**Hỏi trước** / **Tự sửa tệp** / **Tự động** — Claude Code tự duyệt việc an toàn, chỉ hỏi việc rủi ro /
-  **Lên kế hoạch trước**; đổi được giữa chừng ở ô **Chế độ** dưới khung chat). Mọi thứ trả lời ngay trên trang.
+  **Lên kế hoạch trước**; đổi được giữa chừng ở ô **Chế độ** dưới khung chat), chọn **model** (danh sách lấy từ
+  Claude Code, như `/model`: Opus, Fable, Sonnet, Haiku và các bản cũ hơn) và **effort** (low … max; để
+  **Mặc định** thì Claude Code tự chọn theo model, ô chọn ghi rõ mức, vd. medium với Opus 5.5). Mọi thứ trả lời
+  ngay trên trang.
 - **Mở trong app Claude** (như ban đầu, có ở cả chế độ chỉ xem): trang mở app Claude desktop bằng link
   `claude://code/new?q=<việc>&folder=<thư mục>` — giống mục "New Claude Code Session Here" của Finder — để bạn
   xem lại rồi chạy trong app; phiên hiện trong văn phòng như mọi phiên của app, trả lời bằng nút **Mở để trả lời**.
@@ -158,7 +170,10 @@ Nút **＋ Giao việc** trên thanh trên: chọn dự án, ghi việc, rồi c
 Người đó vào bàn làm việc như mọi phiên khác. Với phiên chạy trong văn phòng, bấm vào người đó là thẻ chi tiết
 thành **khung chat**:
 
-- nhắn tiếp (Enter gửi, Shift+Enter xuống dòng), **Dừng** giữa chừng, **Đóng phiên**;
+- nhắn tiếp (Enter gửi, Shift+Enter xuống dòng), kèm **ảnh hay tệp** (📎, dán hay kéo thả: ảnh Claude xem trực
+  tiếp, tệp khác lưu vào thư mục riêng của văn phòng rồi Claude đọc), **nói thay gõ** (🎤, tiếng Việt, cần trình
+  duyệt hỗ trợ đọc chính tả); **Dừng** giữa chừng, **Đóng phiên**, **Xoá khỏi văn phòng**;
+- đổi **Chế độ**, **Model**, **Effort** ngay giữa phiên (có hiệu lực từ câu trả lời sau);
 - Claude **xin quyền** (chạy lệnh, sửa tệp…) thì hiện lệnh đầy đủ và ba nút **Cho phép** / **Luôn cho phép
   trong phiên này** / **Từ chối** — bấm được luôn trên thẻ ở bảng bên;
 - Claude **hỏi bạn** (AskUserQuestion) thì hiện các lựa chọn để bấm, hoặc tự gõ câu trả lời;
@@ -239,6 +254,63 @@ quyền, nên giao việc cho dự án ở đó sẽ báo lỗi kèm cách làm.
   đúng Origin (`lib/tu-xa.js`). **Đừng** dùng `tailscale funnel` (mở ra Internet) hay mở cổng ra Wi-Fi chung: ai
   vào được trang này là ra lệnh được cho Claude trên máy bạn. Tắt: `tailscale serve --https=443 off`.
 
+  Thêm vào màn hình chính (Safari → Chia sẻ → **Thêm vào MH chính**) thì có biểu tượng **Văn phòng** mở như app.
+- **Không mở 3D, chỉ cần báo và bấm duyệt**: dùng bot Telegram (mục dưới) — nhẹ, đỡ hao pin.
+
+## Điều khiển qua Telegram
+
+Nối văn phòng với **một bot Telegram của riêng bạn** (chế độ điều khiển qua web; chế độ chỉ xem không chạy bot):
+
+- bot nhắn ngay khi phiên trong văn phòng **xin quyền** (nút **Cho phép** / **Luôn cho phép trong phiên này** /
+  **Từ chối**), **hỏi bạn** (nút từng lựa chọn, hay tự gõ), **trình kế hoạch** (nút duyệt, hay gửi góp ý), **xong
+  lượt** (kèm câu trả lời của Claude) hay **gặp lỗi**; phiên của app Claude desktop chờ bạn thì bot cũng báo (trả
+  lời trong app);
+- **giao việc** bằng tin nhắn, kèm ảnh hay tệp: bot hỏi giao cho dự án nào bằng nút; việc giao từ Telegram mặc
+  định chạy chế độ **Tự động** (đổi bằng `/chedo`);
+- tin thường gửi vào **phiên đang chat** (phiên vừa giao, hay chọn bằng `/phien`); trả lời (reply) tin của một
+  phiên khác để nhắn phiên đó.
+
+### Nối bot (người dùng tự làm, khoảng 3 phút)
+
+1. Trong Telegram mở **@BotFather** → `/newbot` → đặt tên và username (phải kết thúc bằng `bot`). BotFather gửi
+   lại **token**. Token là chìa khoá điều khiển bot: **đừng gửi cho ai**, kể cả Claude.
+2. Trên Mac, cất token vào Keychain: chạy lệnh dưới trong Terminal, dán token khi được hỏi (hỏi 2 lần).
+
+   ```bash
+   security add-generic-password -U -s claude-office-telegram -a "$USER" -w
+   ```
+
+   Văn phòng tự nhận token trong vòng một phút.
+3. Mở trang văn phòng, bấm **📱** trên thanh trên → **Mở bot trong Telegram** (bấm **Start** nếu Telegram hiện
+   nút này), hoặc nhắn cho bot **mã 6 số** hiện trong hộp. Bot trả lời "Đã nối với văn phòng Claude trên máy của
+   bạn. ✅" là xong.
+
+| Lệnh | Làm gì |
+|---|---|
+| `/phien` | các phiên trong văn phòng, bấm để chọn phiên đang chat |
+| `/moi` | tin tiếp theo là việc mới |
+| `/dung` | dừng phiên đang chat |
+| `/xoa` | xoá một phiên khỏi văn phòng (bot hỏi lại trước khi xoá) |
+| `/model` | chọn model cho việc mới và phiên đang chat |
+| `/effort` | chọn effort (low … max) cho việc mới và phiên đang chat |
+| `/chedo` | chế độ quyền cho việc mới |
+| `/mucdung` | mức dùng gói Claude |
+| `/giup` | xem lại hướng dẫn |
+
+Bot chưa nghe được tin thoại: muốn nói thì bấm micro trên bàn phím điện thoại để đọc chính tả thành chữ.
+
+**An toàn và riêng tư** (`lib/telegram.js`, có bài kiểm):
+
+- Token chỉ nằm trong **Keychain** (mục `claude-office-telegram`), chỉ dùng để gọi `api.telegram.org`; không ghi
+  ra tệp, nhật ký hay trang.
+- Chỉ **một tài khoản Telegram** ra lệnh được: tài khoản gửi đúng mã ghép. Mã chỉ sinh ra khi bạn mở hộp 📱, dùng
+  một lần, hết hạn sau 15 phút, sai 5 lần thì bỏ mã. Tin và nút bấm của người khác bị bỏ qua.
+- Bot tự hỏi Telegram có tin mới không (long polling), **không mở cổng nào** trên máy.
+- **Nội dung đi qua máy chủ Telegram** (việc giao, câu trả lời của Claude, lệnh xin quyền, ảnh và tệp gửi kèm),
+  không mã hoá đầu-cuối. Dự án có dữ liệu nhạy cảm thì đừng dùng bot; mở văn phòng qua Tailscale (mục trên) thay.
+- Ngắt: hộp 📱 → **Ngắt Telegram**. Bỏ hẳn: `security delete-generic-password -s claude-office-telegram`, rồi
+  `/deletebot` trong @BotFather.
+
 ## Đồng hồ và mức dùng
 
 Tường sau khu làm việc có đồng hồ treo tường (chạy theo giờ máy) và bảng **Mức dùng Claude**; thanh trên
@@ -277,9 +349,13 @@ terminal (có tệp trạng thái sống nhưng không có tệp phiên của ap
 ## Cấu trúc
 
 - `server.js` — phục vụ `public/`, `GET /api/trang-thai` (ảnh chụp JSON), `GET /api/su-kien` (SSE, đẩy khi có
-  thay đổi), lệnh điều khiển phiên văn phòng `/api/vp/...` (giao việc, gửi tin, trả lời, dừng, đóng)
-- `lib/phien-vp.js` — phiên chạy trong văn phòng qua Claude Agent SDK: hàng đợi tin, xin quyền, hội thoại
-- `lib/bao-ve.js` — khoá lệnh điều khiển (Host, Origin, mã bí mật, thư mục, chế độ quyền)
+  thay đổi), lệnh điều khiển phiên văn phòng `/api/vp/...` (giao việc, gửi tin, trả lời, dừng, đóng, đổi chế độ,
+  model, effort; danh sách model; bot Telegram)
+- `lib/phien-vp.js` — phiên chạy trong văn phòng qua Claude Agent SDK: hàng đợi tin, xin quyền, hội thoại, model,
+  effort
+- `lib/telegram.js` — bot Telegram riêng: ghép tài khoản, báo lời xin quyền/câu hỏi/kế hoạch kèm nút, giao việc
+- `lib/dinh-kem.js` — kiểm và lưu ảnh, tệp gửi kèm tin nhắn
+- `lib/bao-ve.js` — khoá lệnh điều khiển (Host, Origin, mã bí mật, thư mục, chế độ quyền, model, effort)
 - `lib/tu-xa.js` — mở trên điện thoại qua Tailscale: chỉ nhận đúng tài khoản chủ máy
 - `lib/doc-phien.js` — đọc tệp (có đệm theo mtime/size), đuôi nhật ký, bảng tiến trình
 - `lib/trang-thai.js` — suy trạng thái từng phiên
@@ -294,7 +370,8 @@ terminal (có tệp trạng thái sống nhưng không có tệp phiên của ap
 - `public/js/duong-di.js` — lưới đi lại và tìm đường A*
 - `public/js/man-hinh.js` — màn hình máy tính theo từng kiểu việc
 - `public/js/giao-dien.js` — nhãn trên đầu, ô gợi ý, bảng bên, thẻ chi tiết, thông báo, chuông
-- `public/js/dieu-khien.js` — hộp giao việc, khung chat, hộp duyệt (xin quyền, câu hỏi, kế hoạch)
+- `public/js/dieu-khien.js` — hộp giao việc, khung chat, hộp duyệt (xin quyền, câu hỏi, kế hoạch), đính kèm,
+  nói thay gõ, hộp Telegram
 - `public/js/demo.js` — dữ liệu mẫu cho `?demo`
 
 ## Kiểm
@@ -304,7 +381,8 @@ npm test
 ```
 
 Kiểm tìm đường, tóm đuôi nhật ký, luật suy trạng thái, mức dùng (cả đọc `/usage`), khoá máy chủ và phiên văn
-phòng, truy cập qua Tailscale (dùng một "Claude giả", không gọi API thật) — 57 bài.
+phòng (cả model, effort, ảnh và tệp gửi kèm), truy cập qua Tailscale, bot Telegram (dùng "Claude giả" và
+"Telegram giả", không gọi API thật) — 78 bài.
 
 ## Giới hạn
 

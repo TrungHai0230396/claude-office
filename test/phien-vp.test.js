@@ -104,6 +104,16 @@ function claudeGia(ghi) {
       interrupt: async () => {},
       close: () => {},
       setPermissionMode: async (che) => (ghi.datLai = che),
+      setModel: async (m) => (ghi.doiModel = (ghi.doiModel || []).concat([m])),
+      applyFlagSettings: async (s) => (ghi.flag = (ghi.flag || []).concat([s])),
+      supportedModels: async () => {
+        ghi.soLanHoiModel = (ghi.soLanHoiModel || 0) + 1;
+        return [
+          { value: 'default', displayName: 'Default (recommended)', description: 'Opus 5.5 · Best for everyday, complex tasks', resolvedModel: 'claude-opus-5-5' },
+          { value: 'opus', displayName: 'Opus 5.5', description: 'Best for everyday, complex tasks', resolvedModel: 'claude-opus-5-5', supportsEffort: true, supportedEffortLevels: ['low', 'medium', 'high', 'xhigh', 'max'] },
+          { value: 'sonnet', displayName: 'Sonnet 5.5', description: 'Efficient for routine tasks', resolvedModel: 'claude-sonnet-5-5' },
+        ];
+      },
       get xong() {
         return xong;
       },
@@ -252,3 +262,124 @@ test('duyệt kế hoạch rồi chuyển sang chế độ Tự động; đổi 
     fs.rmSync(goc, { recursive: true, force: true });
   }
 });
+
+test('model: giao việc với model đã chọn, đổi model phiên đang chạy, danh sách model hỏi một lần rồi nhớ', async () => {
+  const goc = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'vpc-pv-')));
+  fs.mkdirSync(path.join(goc, 'du-an'));
+  const ghi = {};
+  const ql = new QuanLyPhienVP({ tepLuu: path.join(goc, 'phien.json'), nha: goc, query: claudeGia(ghi) });
+  try {
+    await assert.rejects(ql.tao({ cwd: path.join(goc, 'du-an'), loiNhan: 'xin chào', moHinh: '--dangerously-skip-permissions' }));
+    const id = await ql.tao({ cwd: path.join(goc, 'du-an'), loiNhan: 'xin chào', moHinh: 'sonnet' });
+    assert.equal(ghi.options.model, 'sonnet');
+    await ql.doiMoHinh(id, 'opus');
+    assert.deepEqual(ghi.doiModel, ['opus']);
+    assert.equal(ql.ds.get(id).moHinh, 'opus');
+    await ql.doiMoHinh(id, 'default');
+    assert.deepEqual(ghi.doiModel, ['opus', undefined], 'mặc định: SDK quay về model mặc định');
+    assert.equal(ql.ds.get(id).moHinh, '');
+    await assert.rejects(ql.doiMoHinh(id, 'opus; rm -rf ~'));
+    const id2 = await ql.tao({ cwd: path.join(goc, 'du-an'), loiNhan: 'việc khác' });
+    assert.equal(ghi.options.model, undefined, 'không chọn thì để Claude Code dùng model mặc định');
+    const [ds, ds2] = await Promise.all([ql.danhSachMoHinh(), ql.danhSachMoHinh()]);
+    assert.deepEqual(ds[1], { gia: 'opus', ten: 'Opus 5.5', moTa: 'Best for everyday, complex tasks', that: 'claude-opus-5-5', effort: ['low', 'medium', 'high', 'xhigh', 'max'], effortMacDinh: 'medium' });
+    assert.deepEqual(ds[2].effort, [], 'model không báo hỗ trợ effort thì không có mức nào');
+    // Mức mặc định ghi trên nhãn, theo tài liệu Claude Code.
+    const tat = ['low', 'medium', 'high', 'xhigh', 'max'];
+    assert.equal(QuanLyPhienVP.effortMacDinh('claude-sonnet-5-5', tat), 'medium');
+    assert.equal(QuanLyPhienVP.effortMacDinh('claude-haiku-5-5', tat), 'medium');
+    assert.equal(QuanLyPhienVP.effortMacDinh('claude-fable-5-1', tat), 'high');
+    assert.equal(QuanLyPhienVP.effortMacDinh('claude-opus-4-7', tat), 'xhigh');
+    assert.equal(QuanLyPhienVP.effortMacDinh('claude-opus-5-50', tat), 'high', 'không nhầm model khác có tên bắt đầu giống');
+    assert.equal(QuanLyPhienVP.effortMacDinh('claude-haiku-4-5-20251001', []), '');
+    assert.equal(ds2, ds);
+    await ql.danhSachMoHinh();
+    assert.equal(ghi.soLanHoiModel, 1, 'hỏi Claude Code một lần rồi nhớ');
+    assert.ok(id2);
+  } finally {
+    ql.tatHet();
+    fs.rmSync(goc, { recursive: true, force: true });
+  }
+});
+
+test('effort: giao việc với mức đã chọn, đổi mức phiên đang chạy, quay về mặc định, nhớ qua lần chạy sau', async () => {
+  const goc = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'vpc-pv-')));
+  fs.mkdirSync(path.join(goc, 'du-an'));
+  const ghi = {};
+  const ql = new QuanLyPhienVP({ tepLuu: path.join(goc, 'phien.json'), nha: goc, query: claudeGia(ghi) });
+  try {
+    await assert.rejects(ql.tao({ cwd: path.join(goc, 'du-an'), loiNhan: 'xin chào', effort: 'ultra' }));
+    const id = await ql.tao({ cwd: path.join(goc, 'du-an'), loiNhan: 'xin chào', effort: 'high' });
+    assert.equal(ghi.options.effort, 'high');
+    await ql.doiEffort(id, 'max');
+    assert.deepEqual(ghi.flag, [{ effortLevel: 'max' }]);
+    assert.equal(ql.ds.get(id).effort, 'max');
+    assert.equal(ql.anh().find((p) => p.id === id).effort, 'max');
+    await ql.doiEffort(id, '');
+    assert.deepEqual(ghi.flag.at(-1), { effortLevel: null }, 'mặc định: quay về mức mặc định của model');
+    await ql.doiEffort(id, 'xhigh');
+    await assert.rejects(ql.doiEffort(id, 'ultra'));
+    // Lần chạy sau (máy chủ khởi động lại, phiên chạy lại từ chỗ cũ) vẫn dùng mức đã chọn.
+    ql.tatHet();
+    await doi(() => {
+      try {
+        return JSON.parse(fs.readFileSync(path.join(goc, 'phien.json'), 'utf8')).some((r) => r.id === id && r.effort === 'xhigh');
+      } catch {
+        return false;
+      }
+    });
+    const sau = new QuanLyPhienVP({ tepLuu: path.join(goc, 'phien.json'), nha: goc, query: claudeGia(ghi) });
+    await sau.napLai();
+    assert.equal(sau.ds.get(id).effort, 'xhigh');
+    await sau.gui(id, 'làm tiếp');
+    assert.equal(ghi.options.effort, 'xhigh');
+    sau.tatHet();
+  } finally {
+    ql.tatHet();
+    fs.rmSync(goc, { recursive: true, force: true });
+  }
+});
+
+test('gửi kèm ảnh và tệp: Claude nhận khối ảnh và đường dẫn tệp, khung chat hiện ảnh nhỏ', async () => {
+  const goc = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'vpc-pv-')));
+  fs.mkdirSync(path.join(goc, 'du-an'));
+  const ghi = {};
+  const nhan = [];
+  const query = ({ prompt, options }) => {
+    ghi.options = options;
+    const it = prompt[Symbol.asyncIterator]();
+    return {
+      async *[Symbol.asyncIterator]() {
+        const { value } = await it.next();
+        nhan.push(value);
+        yield { type: 'system', subtype: 'init', session_id: 'm', permissionMode: 'default' };
+        yield { type: 'result', subtype: 'success', is_error: false, result: 'Đã xem' };
+      },
+      interrupt: async () => {},
+      close: () => {},
+    };
+  };
+  const ql = new QuanLyPhienVP({ tepLuu: path.join(goc, 'phien.json'), nha: goc, query });
+  try {
+    const anh = [{ loai: 'image/jpeg', du: Buffer.from('anh').toString('base64'), nho: 'data:image/jpeg;base64,' + Buffer.from('nho').toString('base64') }];
+    const tep = [{ ten: 'loi.log', du: Buffer.from('dòng lỗi').toString('base64') }];
+    const id = await ql.tao({ cwd: path.join(goc, 'du-an'), loiNhan: '', cheDo: 'default', anh, tep });
+    await doi(() => nhan.length === 1);
+    const noiDung = nhan[0].message.content;
+    assert.equal(noiDung[0].type, 'image');
+    assert.match(noiDung[1].text, /Xem ảnh đính kèm\.[\s\S]*Tệp đính kèm[\s\S]*loi\.log/);
+    const duong = /- (.*loi\.log)/.exec(noiDung[1].text)[1];
+    assert.equal(fs.readFileSync(duong, 'utf8'), 'dòng lỗi');
+    assert.ok(duong.startsWith(path.join(goc, 'tep-gui', id)));
+    const muc = ql.hoiThoai(id).ds.find((m) => m.loai === 'ban');
+    assert.equal(muc.anh.length, 1);
+    assert.deepEqual(muc.tep, ['loi.log']);
+    assert.equal(ql.ds.get(id).ten, 'Ảnh đính kèm');
+    // Không chữ, không kèm gì thì vẫn bị từ chối.
+    await assert.rejects(ql.tao({ cwd: path.join(goc, 'du-an'), loiNhan: '', cheDo: 'default' }), /Tin nhắn trống/);
+  } finally {
+    ql.tatHet();
+    fs.rmSync(goc, { recursive: true, force: true });
+  }
+});
+
