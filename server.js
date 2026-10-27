@@ -10,7 +10,8 @@ import { fileURLToPath } from 'node:url';
 import { TheoDoiPhien } from './lib/theo-doi.js';
 import { QuanLyPhienVP } from './lib/phien-vp.js';
 import { LayMucDung } from './lib/lay-muc-dung.js';
-import { taoKhoa, kiemLenh, hostHopLe, LoiNguoiDung } from './lib/bao-ve.js';
+import { TuXa } from './lib/tu-xa.js';
+import { taoKhoa, kiemLenh, LoiNguoiDung } from './lib/bao-ve.js';
 
 const GOC = path.dirname(fileURLToPath(import.meta.url));
 const WEB = path.join(GOC, 'public');
@@ -45,6 +46,8 @@ const LAN_CHAY = taoKhoa().slice(0, 12);
 let theoDoi = null;
 const quanLy = DIEU_KHIEN ? new QuanLyPhienVP({ khiDoi: () => theoDoi?.phat() }) : null;
 const nguoiNghe = new Set();
+// Mở trên điện thoại qua Tailscale (tailscale serve → 127.0.0.1): chỉ nhận đúng tài khoản chủ máy.
+const tuXa = new TuXa();
 // Mức dùng gói lấy thẳng từ Claude Code (/usage), chỉ khi có trang đang mở. Chế độ chỉ xem thì không chạy
 // Claude Code, chỉ đọc tệp app Claude ghi.
 const layMucDung = DIEU_KHIEN ? new LayMucDung({ coNguoiXem: () => nguoiNghe.size > 0, khiDoi: () => theoDoi?.phat() }) : null;
@@ -134,10 +137,10 @@ async function dsThuMuc() {
 }
 
 // Lệnh điều khiển phiên văn phòng: /api/vp/...
-async function lenhVP(req, res, url) {
+async function lenhVP(req, res, url, truyCap) {
   if (!quanLy) return guiJson(res, 403, { loi: 'Phần giao việc đang tắt (VPC_DIEU_KHIEN=0).' });
   const doc = req.method === 'GET';
-  const tuChoi = kiemLenh({ method: req.method, headers: req.headers, cong: CONG, khoa: KHOA, ghi: !doc });
+  const tuChoi = kiemLenh({ method: req.method, headers: req.headers, cong: CONG, khoa: KHOA, ghi: !doc, truyCap, nguonThem: tuXa.nguonThem() });
   if (tuChoi) return guiJson(res, 403, { loi: tuChoi });
   const phan = url.pathname.split('/').filter(Boolean); // ['api','vp',...]
   try {
@@ -170,12 +173,14 @@ async function lenhVP(req, res, url) {
 
 const mayChu = http.createServer(async (req, res) => {
   // Chỉ trả lời yêu cầu gửi tới chính máy này (Host đúng localhost), chặn trang lạ dùng DNS rebinding.
-  if (!hostHopLe(req.headers.host)) {
-    res.writeHead(403).end('Chỉ mở từ chính máy này.');
+  // Thêm: qua Tailscale thì phải đúng tài khoản chủ máy (lib/tu-xa.js).
+  const truyCap = tuXa.kiem(req.headers);
+  if (!truyCap.hopLe) {
+    res.writeHead(403, { 'Content-Type': KIEU['.txt'] }).end(truyCap.lyDo || 'Chỉ mở từ chính máy này.');
     return;
   }
   const url = new URL(req.url, 'http://127.0.0.1');
-  if (url.pathname.startsWith('/api/vp/')) return lenhVP(req, res, url);
+  if (url.pathname.startsWith('/api/vp/')) return lenhVP(req, res, url, truyCap);
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.writeHead(405, DAU_AN_TOAN).end();
     return;
@@ -241,6 +246,7 @@ mayChu.on('error', (e) => {
 await quanLy?.napLai();
 theoDoi.batDau();
 layMucDung?.batDau();
+tuXa.batDau();
 mayChu.listen(CONG, MAY, () => {
   console.log(`Claude Office: http://${MAY}:${CONG}`);
 });

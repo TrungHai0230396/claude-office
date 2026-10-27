@@ -274,6 +274,7 @@ button { font: inherit; color: inherit; }
   max-height: 4.4em; overflow: hidden;
 }
 .the-cho .nut-dong { flex-wrap: wrap; }
+.goi-y-app { font-size: 12.5px; color: var(--chu-phu); align-self: center; }
 
 .the.co-chat {
   width: min(470px, calc(100vw - 24px)); height: calc(100vh - 160px); max-height: none;
@@ -346,6 +347,12 @@ button { font: inherit; color: inherit; }
 .o-nhap { flex: none; display: flex; gap: 6px; align-items: flex-end; }
 .o-nhap textarea { resize: none; min-height: 38px; max-height: 140px; line-height: 1.45; }
 .o-nhap .nut { height: 38px; }
+.nut-noi { width: 38px; padding: 0; font-size: 17px; flex: none; }
+.nut-noi.dang-nghe { background: var(--loi); border-color: var(--loi); color: #fff; animation: dangNghe 1.2s ease-in-out infinite; }
+@keyframes dangNghe { 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--loi) 25%, transparent); } }
+.hop-giao .truong { position: relative; }
+.hop-giao .nut-noi-hop { position: absolute; right: 8px; bottom: 8px; height: 34px; width: 34px; border-radius: 50%; }
+.hop-giao .nut-noi-hop ~ * , .hop-giao textarea { padding-right: 48px; }
 .nut-phu { flex: none; display: flex; gap: 6px; flex-wrap: wrap; }
 .nut-phu .phai { margin-left: auto; color: var(--chu-mo); }
 .che-do-chat { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--chu-phu); }

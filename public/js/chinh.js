@@ -23,13 +23,17 @@ scene.background = new THREE.Color('#ece6dc');
 
 const camera = new THREE.PerspectiveCamera(36, window.innerWidth / window.innerHeight, 0.3, 400);
 camera.position.set(-3, 30, 24);
-// Điều khiển kiểu xem bản đồ: kéo chuột (hay một ngón) là dời cảnh, lăn chuột (hay hai ngón) là
-// phóng to/thu nhỏ. Khoá xoay để cảnh không bao giờ quay vòng.
+// Điều khiển kiểu xem bản đồ: kéo chuột trái (hay một ngón) là dời cảnh, lăn chuột (hay chụm hai ngón) là
+// phóng to/thu nhỏ; kéo chuột phải, Shift + kéo chuột trái hay xoay hai ngón là xoay hướng nhìn. Máy quay chỉ
+// xoay khi bạn xoay, không bao giờ tự quay; nghiêng có giới hạn để không lật xuống dưới sàn.
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 0, 0.5);
-controls.enableRotate = false;
-controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
-controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN };
+controls.enableRotate = true;
+controls.rotateSpeed = 0.5;
+controls.minPolarAngle = 0.2;
+controls.maxPolarAngle = 1.2;
+controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
 controls.enableDamping = true;
 controls.dampingFactor = 0.14;
 controls.zoomSpeed = 0.7;
@@ -84,7 +88,9 @@ toi.addEventListener?.('change', datChuDe);
 // màn dọc (điện thoại) nhìn từ phía tây cho văn phòng nằm dọc theo màn. Đổi khu chỉ trượt và
 // phóng/thu (nội suy tâm nhìn và khoảng cách, giữ nguyên hướng), nên không bao giờ xoay.
 const MAN_DOC = window.innerHeight > window.innerWidth * 1.1;
-const HUONG = new THREE.Vector3(...(MAN_DOC ? [-0.62, 0.78, 0.08] : [-0.12, 0.8, 0.59])).normalize();
+// Hướng nhìn chuẩn (nút Toàn cảnh trả về hướng này); "huong" là hướng đang nhìn, đổi khi bạn tự xoay.
+const HUONG_GOC = new THREE.Vector3(...(MAN_DOC ? [-0.62, 0.78, 0.08] : [-0.12, 0.8, 0.59])).normalize();
+const huong = HUONG_GOC.clone();
 const KHU_NHIN = { toan: BIEN, duyet: KHU.duyet, lam: KHU.lam, cafe: KHU.cafe, vuon: KHU.vuon };
 let gocHienTai = 'toan';
 let truotAnim = null;
@@ -94,21 +100,23 @@ function khoangHienTai() {
 }
 function datMay(dich, d) {
   controls.target.copy(dich);
-  camera.position.copy(dich).addScaledVector(HUONG, d);
+  camera.position.copy(dich).addScaledVector(huong, d);
 }
-// Trượt tâm nhìn tới "dich" và đổi khoảng cách tới "d" (phóng/thu đều theo tỉ lệ), giữ hướng.
-function truot(dich, d, giay) {
+// Trượt tâm nhìn tới "dich" và đổi khoảng cách tới "d" (phóng/thu đều theo tỉ lệ); "denH" (nếu có) là hướng
+// nhìn muốn về, không thì giữ hướng đang nhìn.
+function truot(dich, d, giay, denH = null) {
   const tuD = khoangHienTai();
   const xa = controls.target.distanceTo(dich);
   const ti = Math.abs(Math.log(d / tuD));
-  const dai = giay ?? Math.min(0.9, Math.max(0.35, 0.3 + xa / 45 + ti * 0.5));
-  truotAnim = { tuT: controls.target.clone(), denT: dich.clone(), tuD, denD: d, bd: performance.now(), dai: dai * 1000 };
+  const xoay = denH ? huong.angleTo(denH) : 0;
+  const dai = giay ?? Math.min(1.1, Math.max(0.35, 0.3 + xa / 45 + ti * 0.5 + xoay * 0.35));
+  truotAnim = { tuT: controls.target.clone(), denT: dich.clone(), tuD, denD: d, tuH: huong.clone(), denH: (denH || huong).clone(), bd: performance.now(), dai: dai * 1000 };
 }
 
 // Khoảng cách vừa đủ để cả một khu (hộp trên sàn) nằm trong phần màn hình còn trống. Luôn tính như
 // lúc bảng bên đang mở, nên mở hay gập bảng không phải canh lại (cảnh chỉ dịch sang ngang).
 const camThu = new THREE.PerspectiveCamera();
-function khoangVua(hop) {
+function khoangVua(hop, huongNhin = huong) {
   const w = window.innerWidth;
   const h = window.innerHeight;
   const lech = w >= 900 ? bang.offsetWidth + 12 : 0;
@@ -131,7 +139,7 @@ function khoangVua(hop) {
   let xa = 300;
   for (let i = 0; i < 26; i++) {
     const d = (gan + xa) / 2;
-    camThu.position.copy(dich).addScaledVector(HUONG, d);
+    camThu.position.copy(dich).addScaledVector(huongNhin, d);
     camThu.lookAt(dich);
     camThu.updateMatrixWorld();
     let vua = true;
@@ -149,15 +157,18 @@ function khoangVua(hop) {
 }
 // Không cho lùi xa hơn toàn cảnh một chút, khỏi thu văn phòng thành một chấm.
 function datGioiHan() {
-  controls.maxDistance = Math.max(30, khoangVua(BIEN).d * 1.15);
+  controls.maxDistance = Math.max(30, khoangVua(BIEN, HUONG_GOC).d * 1.15);
 }
+// Toàn cảnh thì về cả hướng nhìn chuẩn; các khu khác giữ hướng bạn đang nhìn.
 function veGoc(ten, ngay = false) {
-  const { dich, d } = khoangVua(KHU_NHIN[ten]);
+  const denH = ten === 'toan' ? HUONG_GOC : null;
+  const { dich, d } = khoangVua(KHU_NHIN[ten], denH || huong);
   if (ngay) {
     truotAnim = null;
+    if (denH) huong.copy(denH);
     datMay(dich, d);
     controls.update();
-  } else truot(dich, d);
+  } else truot(dich, d, undefined, denH);
 }
 
 // Người được chọn mà đang nằm ngoài phần màn hình còn trống thì trượt ngang tới, giữ độ xa.
@@ -269,6 +280,10 @@ renderer.domElement.addEventListener('pointerleave', () => {
   giaoDien.datTro(null);
   khung.classList.remove('tro');
 });
+// Bạn tự xoay (kể cả đoạn trôi chậm dần sau khi thả tay): ghi lại hướng đang nhìn để các lần trượt sau giữ đúng hướng.
+controls.addEventListener('change', () => {
+  if (!truotAnim) huong.subVectors(camera.position, controls.target).normalize();
+});
 controls.addEventListener('start', () => {
   truotAnim = null;
   gocHienTai = null;
@@ -310,7 +325,7 @@ const KHOA_MAY = 'vpc-may';
 function luuMay() {
   try {
     const t = controls.target;
-    sessionStorage.setItem(KHOA_MAY, JSON.stringify({ luc: Date.now(), t: [t.x, t.y, t.z], d: khoangHienTai(), goc: gocHienTai, chon: giaoDien.chon, diTheo }));
+    sessionStorage.setItem(KHOA_MAY, JSON.stringify({ luc: Date.now(), t: [t.x, t.y, t.z], d: khoangHienTai(), h: [huong.x, huong.y, huong.z], goc: gocHienTai, chon: giaoDien.chon, diTheo }));
   } catch {}
 }
 window.addEventListener('pagehide', luuMay);
@@ -321,6 +336,7 @@ try {
   if (!mayCu || Date.now() - mayCu.luc > 30 * 60e3 || !Array.isArray(mayCu.t) || !(mayCu.d > 0)) mayCu = null;
 } catch {}
 if (mayCu) {
+  if (Array.isArray(mayCu.h) && mayCu.h.length === 3 && mayCu.h.every(Number.isFinite)) huong.set(...mayCu.h).normalize();
   datMay(new THREE.Vector3(...mayCu.t), Math.min(controls.maxDistance, Math.max(controls.minDistance, mayCu.d)));
   controls.update();
   gocHienTai = KHU_NHIN[mayCu.goc] ? mayCu.goc : null;
@@ -338,6 +354,8 @@ window.addEventListener('keydown', (e) => {
 
 // ---------- dữ liệu ----------
 const thamSo = new URLSearchParams(location.search);
+// Lệnh bị từ chối vì mã cũ (máy chủ đã khởi động lại mà trang chưa tải lại): tải lại cho có mã mới.
+window.addEventListener('vpc-ma-cu', () => giaoDien.mayChuKhoiDongLai());
 let banMoi = null;
 let laDau = true;
 let lanChayDau = null;
@@ -424,6 +442,7 @@ function ve() {
     const k = Math.min(1, (performance.now() - a.bd) / a.dai);
     const e = 1 - Math.pow(1 - k, 3);
     const dich = new THREE.Vector3().lerpVectors(a.tuT, a.denT, e);
+    huong.copy(a.tuH).lerp(a.denH, e).normalize();
     datMay(dich, a.tuD * Math.pow(a.denD / a.tuD, e));
     if (k >= 1) truotAnim = null;
   } else if (diTheo && giaoDien.chon) {

@@ -3,6 +3,8 @@
 // vpc-khoa). Lời xin quyền chỉ được trả lời bằng cú bấm của bạn; không có gì tự cho phép.
 const KHOA = document.querySelector('meta[name="vpc-khoa"]')?.content || '';
 export const coDieuKhien = () => !!KHOA;
+// Đang mở từ máy khác (điện thoại qua Tailscale): link claude:// chỉ mở được app Claude desktop trên Mac.
+export const TU_XA = !['127.0.0.1', 'localhost', '[::1]'].includes(location.hostname);
 
 export const TEN_CHE_DO = { default: 'Hỏi trước', acceptEdits: 'Tự sửa tệp', auto: 'Tự động', plan: 'Lên kế hoạch trước' };
 
@@ -11,6 +13,65 @@ function el(the, lop, chu) {
   if (lop) e.className = lop;
   if (chu !== undefined) e.textContent = chu;
   return e;
+}
+
+// ---------- nói thay gõ ----------
+// Nhận giọng nói tiếng Việt bằng Web Speech API của trình duyệt (Safari, Chrome; trình duyệt gửi tiếng nói cho
+// Apple/Google nhận dạng). Chữ nhận được điền vào ô để bạn xem lại rồi mới bấm gửi: việc giao đi là chạy lệnh
+// thật trên máy, nghe nhầm một chữ là sai việc, nên không bao giờ tự gửi.
+const NhanGiong = window.SpeechRecognition || window.webkitSpeechRecognition;
+export const coGiongNoi = !!NhanGiong;
+const LOI_GIONG = {
+  'not-allowed': 'Trình duyệt chưa cho dùng micro. Cho phép micro cho trang này rồi bấm lại.',
+  'service-not-allowed': 'Trình duyệt không cho nhận giọng nói ở đây. Dùng nút micro trên bàn phím điện thoại.',
+  'no-speech': 'Không nghe thấy gì, bấm 🎤 rồi nói lại.',
+  'audio-capture': 'Không tìm thấy micro.',
+  network: 'Nhận giọng nói cần mạng Internet.',
+};
+
+export function nutNoi(oNhap, baoLoi = () => {}) {
+  if (!coGiongNoi) return null;
+  const b = el('button', 'nut nut-noi', '🎤');
+  b.type = 'button';
+  b.title = 'Nói thay gõ (tiếng Việt). Bấm lần nữa để dừng.';
+  b.setAttribute('aria-label', 'Nói thay gõ');
+  let nhan = null;
+  b.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (nhan) return nhan.stop();
+    nhan = new NhanGiong();
+    nhan.lang = 'vi-VN';
+    nhan.interimResults = true;
+    nhan.continuous = true;
+    const truoc = oNhap.value.trim() ? oNhap.value.replace(/\s*$/, ' ') : '';
+    let chot = '';
+    nhan.onresult = (ev) => {
+      let tam = '';
+      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+        if (ev.results[i].isFinal) chot += ev.results[i][0].transcript;
+        else tam += ev.results[i][0].transcript;
+      }
+      oNhap.value = truoc + chot + tam;
+      oNhap.dispatchEvent(new Event('input'));
+    };
+    nhan.onerror = (ev) => baoLoi(LOI_GIONG[ev.error] || 'Không nhận được giọng nói (' + ev.error + ').');
+    nhan.onend = () => {
+      nhan = null;
+      b.classList.remove('dang-nghe');
+      b.textContent = '🎤';
+      oNhap.focus();
+    };
+    try {
+      nhan.start();
+      b.classList.add('dang-nghe');
+      b.textContent = '■';
+    } catch (loi) {
+      nhan = null;
+      baoLoi('Không bật được micro: ' + (loi?.message || loi));
+    }
+  });
+  return b;
 }
 
 function nutBam(lop, chu, lam) {
@@ -34,6 +95,7 @@ async function goi(duong, than) {
   try {
     du = await r.json();
   } catch {}
+  if (r.status === 403 && /mã của trang/.test(du.loi || '')) window.dispatchEvent(new Event('vpc-ma-cu'));
   if (!r.ok) {
     const e = new Error(du.loi || `Máy chủ trả lỗi ${r.status}`);
     e.quyen = !!du.quyen;
@@ -145,6 +207,19 @@ export class HopGiaoViec {
     this.chon = this.form.elements.thuMuc;
     this.khac = this.form.elements.thuMucKhac;
     this.viec = this.form.elements.loiNhan;
+    const noi = nutNoi(this.viec, (chu) => this._loi(chu));
+    if (noi) {
+      noi.classList.add('nut-noi-hop');
+      this.viec.after(noi);
+    }
+    try {
+      this.viec.value = sessionStorage.getItem('vpc-giao-viec') || '';
+    } catch {}
+    this.viec.addEventListener('input', () => {
+      try {
+        sessionStorage.setItem('vpc-giao-viec', this.viec.value);
+      } catch {}
+    });
     this.baoLoi = this.hop.querySelector('.loi-hop');
     this.nutGiao = this.hop.querySelector('[data-viec="giao"]');
     this.chon.addEventListener('change', () => this._hienKhac());
@@ -162,12 +237,17 @@ export class HopGiaoViec {
     });
   }
 
-  // Có điều khiển qua web không (máy chủ bật chế độ điều khiển và trang có mã bí mật).
+  // Có điều khiển qua web không (máy chủ bật chế độ điều khiển và trang có mã bí mật). Mở từ điện thoại thì
+  // không có lựa chọn mở trong app Claude desktop.
   datVanPhong(co) {
     this.coVanPhong = !!co;
     const r = this.form.querySelector('input[name="noiChay"][value="vanphong"]');
+    const rApp = this.form.querySelector('input[name="noiChay"][value="app"]');
     r.disabled = !this.coVanPhong;
-    if (!this.coVanPhong) this.form.querySelector('input[name="noiChay"][value="app"]').checked = true;
+    rApp.disabled = TU_XA;
+    rApp.closest('label').classList.toggle('an', TU_XA);
+    if (!this.coVanPhong) rApp.checked = true;
+    else if (TU_XA) r.checked = true;
     this.hop.querySelector('.tat-web').classList.toggle('an', this.coVanPhong);
     this._hienNoiChay();
   }
@@ -274,6 +354,9 @@ export class HopGiaoViec {
       // Mở ngay trong lúc bấm (trình duyệt chỉ cho mở app ngoài khi người dùng vừa bấm).
       location.href = linkMoTrongApp(loiNhan, day);
       this.viec.value = '';
+      try {
+        sessionStorage.removeItem('vpc-giao-viec');
+      } catch {}
       this.hop.close();
       this.khiMoApp?.();
       return;
@@ -286,6 +369,9 @@ export class HopGiaoViec {
           localStorage.setItem('vpc-thu-muc', thuMuc);
         } catch {}
         this.viec.value = '';
+        try {
+          sessionStorage.removeItem('vpc-giao-viec');
+        } catch {}
         this.hop.close();
         this.khiTao(id);
       },
@@ -315,7 +401,8 @@ export class KhungChat {
     this.nhap.setAttribute('aria-label', 'Nhắn cho Claude');
     this.nutGui = el('button', 'nut chinh', 'Gửi');
     this.nutGui.type = 'submit';
-    this.form.append(this.nhap, this.nutGui);
+    const noi = nutNoi(this.nhap, (chu) => this._baoLoi(new Error(chu)));
+    this.form.append(...[this.nhap, noi, this.nutGui].filter(Boolean));
     this.phu = el('div', 'nut-phu');
     this.goc.append(this.log, this.hopDuyet, this.loi, this.form, this.phu);
 
@@ -338,7 +425,12 @@ export class KhungChat {
       e.preventDefault();
       this._gui();
     });
+    // Chữ gõ dở của từng phiên, giữ cả qua lần trang tải lại (sessionStorage của thẻ này).
     this.nhapTheoPhien = new Map();
+    try {
+      for (const [k, v] of Object.entries(JSON.parse(sessionStorage.getItem('vpc-nhap') || '{}'))) if (typeof v === 'string') this.nhapTheoPhien.set(k, v);
+    } catch {}
+    this.nhap.addEventListener('input', () => this.luuNhap());
   }
 
   // Gắn vào thẻ chi tiết (một lần); thẻ vẽ lại phần trên mà không đụng khung chat.
@@ -575,8 +667,14 @@ export class KhungChat {
     if (d.soCho > 1) h.append(el('small', 'con-lai', `Còn ${d.soCho - 1} lời hỏi khác đang chờ sau lời này.`));
   }
 
-  coChuDangGo() {
-    return !!this.nhap.value.trim() || [...this.nhapTheoPhien.values()].some((v) => v && v.trim());
+  luuNhap() {
+    if (this.id) {
+      if (this.nhap.value) this.nhapTheoPhien.set(this.id, this.nhap.value);
+      else this.nhapTheoPhien.delete(this.id);
+    }
+    try {
+      sessionStorage.setItem('vpc-nhap', JSON.stringify(Object.fromEntries(this.nhapTheoPhien)));
+    } catch {}
   }
 
   _baoMau() {
@@ -592,6 +690,7 @@ export class KhungChat {
     if (ok && id === this.id) {
       this.nhap.value = '';
       this.nhapTheoPhien.delete(id);
+      this.luuNhap();
       this._coGian();
       this._anLoi();
       this.nutGui.disabled = false;

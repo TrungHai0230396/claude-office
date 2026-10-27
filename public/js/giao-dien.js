@@ -4,7 +4,7 @@
 //   - thông báo chỉ khi có người mới xin duyệt hay vừa gặp lỗi
 //   - phiên do văn phòng chạy: cho phép ngay trên thẻ chờ, chat và trả lời trong thẻ chi tiết (dieu-khien.js)
 import * as THREE from 'three';
-import { coDieuKhien, lenh, KhungChat, HopGiaoViec, TEN_CHE_DO } from './dieu-khien.js';
+import { coDieuKhien, lenh, KhungChat, HopGiaoViec, TEN_CHE_DO, TU_XA } from './dieu-khien.js';
 
 export const TEN_TRANG_THAI = { lam: 'Đang làm', cho: 'Chờ bạn', loi: 'Gặp lỗi', nghi: 'Đang nghỉ', ngu: 'Ngủ gật' };
 export const LOAI_DUYET = {
@@ -243,7 +243,8 @@ export class GiaoDien {
 
   // bat: máy chủ có bật điều khiển qua web không; undefined là dữ liệu mẫu (ẩn nút Giao việc).
   datDieuKhien(bat) {
-    this.nutGiao.classList.toggle('an', bat === undefined);
+    // Dữ liệu mẫu: ẩn. Mở từ điện thoại mà máy chủ ở chế độ chỉ xem: không giao được gì, ẩn luôn.
+    this.nutGiao.classList.toggle('an', bat === undefined || (TU_XA && !(bat === true && coDieuKhien())));
     this.hopGiao.datVanPhong(bat === true && coDieuKhien());
   }
 
@@ -255,23 +256,34 @@ export class GiaoDien {
 
   // Máy chủ khởi động lại thì mã bí mật đổi: tải lại trang để lấy mã mới (đang gõ dở thì hỏi trước).
   // Trả về true nếu đang tải lại trang.
+  // Máy chủ khởi động lại (mã bí mật đổi, mã trang có thể đã mới): tải lại trang. Chữ gõ dở trong khung chat
+  // và hộp giao việc được giữ qua lần tải lại; đang gõ hay đang mở hộp thì chờ gõ xong rồi mới tải lại.
+  // Trả về true: trang sắp tải lại, đừng xử lý tiếp (khỏi gửi lệnh bằng mã cũ).
   mayChuKhoiDongLai() {
     if (!this.chat) return false;
     if (this.dangTaiLai) return true;
-    if (this.daBaoKhoiDong) return false;
-    const dangGo = document.querySelector('dialog[open]') || this.chat.coChuDangGo();
-    if (!dangGo) {
+    const dangGo = () => {
+      const a = document.activeElement;
+      return !!document.querySelector('dialog[open]') || (!!a && /^(TEXTAREA|INPUT|SELECT)$/.test(a.tagName) && !!String(a.value || '').trim());
+    };
+    const taiLai = () => {
       this.dangTaiLai = true;
+      this.chat.luuNhap();
       location.reload();
+    };
+    if (!dangGo()) {
+      taiLai();
       return true;
     }
-    this.daBaoKhoiDong = true;
-    const hop = document.getElementById('thong-bao');
-    const e = el('div', 'tb');
-    e.append(el('b', '', 'Máy chủ vừa khởi động lại'), el('span', '', 'Bấm vào đây để tải lại trang (lệnh cần mã mới). Chữ đang gõ sẽ mất, chép ra trước nếu cần.'));
-    e.addEventListener('click', () => location.reload());
-    hop.prepend(e);
-    return false;
+    if (!this.henTaiLai) {
+      this.thongBao('Văn phòng vừa cập nhật', 'Trang tự tải lại khi bạn gõ xong; chữ đang gõ được giữ lại.', 'cho');
+      this.henTaiLai = setInterval(() => {
+        if (dangGo()) return;
+        clearInterval(this.henTaiLai);
+        taiLai();
+      }, 1500);
+    }
+    return true;
   }
 
   baoLoi(chu) {
@@ -487,6 +499,8 @@ export class GiaoDien {
         });
         nut.append(b);
       }
+    } else if (p.lienKet && TU_XA) {
+      nut.append(el('span', 'goi-y-app', 'Trả lời trong app Claude (mục Code)'));
     } else if (p.lienKet) {
       const a = el('a', 'nut chinh nho', 'Mở để trả lời');
       a.href = p.lienKet;
@@ -620,7 +634,9 @@ export class GiaoDien {
     }
 
     const nut = el('div', 'nut-dong');
-    if (p.lienKet) {
+    if (p.lienKet && TU_XA) {
+      nut.append(el('span', 'goi-y-app', h === 'cho' ? 'Trả lời trong app Claude (mục Code)' : 'Mở trong app Claude (mục Code)'));
+    } else if (p.lienKet) {
       const a = el('a', 'nut chinh', h === 'cho' ? 'Mở để trả lời' : 'Mở trong Claude');
       a.href = p.lienKet;
       nut.append(a);

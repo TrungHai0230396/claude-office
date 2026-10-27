@@ -223,6 +223,22 @@ quyền, nên giao việc cho dự án ở đó sẽ báo lỗi kèm cách làm.
   trình chạy bằng `node` đó đều có quyền này.
 - Hoặc không chạy nền (`npm run go-tu-chay`) mà chạy `npm start` từ Terminal.
 
+## Dùng trên điện thoại
+
+- **Chỉ cần trả lời phiên của app Claude**: dùng app **Claude** trên điện thoại (mục **Code**). Bật "Connect new
+  sessions to Remote Control" trong app Claude desktop (Settings → Claude Code) thì các phiên trên Mac hiện trên
+  điện thoại, nhắn tiếp và cho phép được ở đó (gói Team/Enterprise cần người quản trị bật Remote Control).
+- **Mở cả văn phòng 3D** (xem, giao việc, chat, duyệt): qua **Tailscale** — mạng riêng, mã hoá, chỉ máy của bạn.
+  1. Cài Tailscale trên Mac và điện thoại, đăng nhập cùng một tài khoản.
+  2. Trên Mac chạy `tailscale serve --bg 5230` (lần đầu Tailscale có thể nhờ bật HTTPS cho mạng của bạn — bấm
+     link nó in ra). Lệnh in ra địa chỉ dạng `https://<tên-máy>.<tên-mạng>.ts.net`.
+  3. Mở địa chỉ đó trên điện thoại (đang bật Tailscale).
+
+  Máy chủ vẫn chỉ nghe `127.0.0.1`; yêu cầu đi qua `tailscale serve` chỉ được nhận khi Tailscale báo đúng là
+  **tài khoản chủ máy** (người khác trong cùng mạng Tailscale cũng không vào được), lệnh vẫn cần mã bí mật và
+  đúng Origin (`lib/tu-xa.js`). **Đừng** dùng `tailscale funnel` (mở ra Internet) hay mở cổng ra Wi-Fi chung: ai
+  vào được trang này là ra lệnh được cho Claude trên máy bạn. Tắt: `tailscale serve --https=443 off`.
+
 ## Đồng hồ và mức dùng
 
 Tường sau khu làm việc có đồng hồ treo tường (chạy theo giờ máy) và bảng **Mức dùng Claude**; thanh trên
@@ -264,6 +280,7 @@ terminal (có tệp trạng thái sống nhưng không có tệp phiên của ap
   thay đổi), lệnh điều khiển phiên văn phòng `/api/vp/...` (giao việc, gửi tin, trả lời, dừng, đóng)
 - `lib/phien-vp.js` — phiên chạy trong văn phòng qua Claude Agent SDK: hàng đợi tin, xin quyền, hội thoại
 - `lib/bao-ve.js` — khoá lệnh điều khiển (Host, Origin, mã bí mật, thư mục, chế độ quyền)
+- `lib/tu-xa.js` — mở trên điện thoại qua Tailscale: chỉ nhận đúng tài khoản chủ máy
 - `lib/doc-phien.js` — đọc tệp (có đệm theo mtime/size), đuôi nhật ký, bảng tiến trình
 - `lib/trang-thai.js` — suy trạng thái từng phiên
 - `lib/theo-doi.js` — vòng quét mỗi giây, so ảnh chụp để chỉ đẩy khi đổi
@@ -287,7 +304,7 @@ npm test
 ```
 
 Kiểm tìm đường, tóm đuôi nhật ký, luật suy trạng thái, mức dùng (cả đọc `/usage`), khoá máy chủ và phiên văn
-phòng (dùng một "Claude giả", không gọi API thật) — 48 bài.
+phòng, truy cập qua Tailscale (dùng một "Claude giả", không gọi API thật) — 57 bài.
 
 ## Giới hạn
 
