@@ -2,6 +2,7 @@
 // Claude trên máy này. Chỉ nghe 127.0.0.1. Phiên của app Claude chỉ đọc; phiên do văn phòng tự chạy
 // (Claude Agent SDK, bằng đăng nhập Claude Code của bạn) thì điều khiển được, nhưng chỉ nhận lệnh từ
 // chính trang văn phòng (lib/bao-ve.js).
+import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import http from 'node:http';
 import os from 'node:os';
@@ -262,11 +263,37 @@ mayChu.on('error', (e) => {
   throw e;
 });
 
+// Canh kẹt. Ngày 28/10/2026 máy chủ vẫn chạy nhưng mọi việc đọc tệp và tra tên miền không bao giờ xong: trang
+// không mở, ảnh chụp đứng yên, bot Telegram "fetch failed", dù /api/trang-thai (lấy từ bộ nhớ) vẫn trả lời. Cứ 30
+// giây thử đọc một tệp; 3 lần liền quá 15 giây thì ghi báo cáo chẩn đoán (không kèm biến môi trường) vào thư mục
+// nhật ký rồi thoát để LaunchAgent bật lại.
+let lanKet = 0;
+setInterval(async () => {
+  const xong = await Promise.race([
+    fsp.stat(WEB).then(() => true, () => true),
+    new Promise((r) => setTimeout(r, 15e3, false).unref()),
+  ]);
+  if (xong) return void (lanKet = 0);
+  if (++lanKet < 3) return;
+  const dangCho = {};
+  for (const k of process.getActiveResourcesInfo()) dangCho[k] = (dangCho[k] || 0) + 1;
+  console.error(`${new Date().toISOString()} Máy chủ kẹt: đọc tệp không xong sau 3 lần thử, tự khởi động lại. Việc đang chờ: ${JSON.stringify(dangCho)}`);
+  try {
+    const thuMuc = path.join(os.homedir(), 'Library', 'Logs', 'ClaudeOffice');
+    fs.mkdirSync(thuMuc, { recursive: true });
+    process.report.excludeEnv = true;
+    process.report.excludeNetwork = true;
+    console.error('Báo cáo chẩn đoán:', process.report.writeReport(path.join(thuMuc, `ket-${Date.now()}.json`)));
+  } catch {}
+  quanLy?.tatHet();
+  process.exit(1);
+}, 30e3).unref();
+
 await quanLy?.napLai();
 theoDoi.batDau();
 layMucDung?.batDau();
 tuXa.batDau();
 botTg?.batDau();
 mayChu.listen(CONG, MAY, () => {
-  console.log(`Claude Office: http://${MAY}:${CONG}`);
+  console.log(`${new Date().toISOString()} Claude Office: http://${MAY}:${CONG}`);
 });
